@@ -1,0 +1,7 @@
+*.n3
+*.nt
+*.txt
+.idea
+related
+tweets
+venv

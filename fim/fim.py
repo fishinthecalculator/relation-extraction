@@ -55,8 +55,7 @@ def visit_tweet_graph(node, current_level=0, max_level=10, visited=defaultdict(b
                                          visited=visited)
 
 
-def tweetskb_triples(tweet_graph, entity, rep):
-    tweet_graph.add((entity, NEE.detectedAs, rep))
+def tweetskb_triples(tweet_graph, entity):
     for uri in g.objects(entity, NEE.hasMatchedURI):
         tweet_graph.add((entity, NEE.hasMatchedURI, uri))
     return tweet_graph
@@ -75,11 +74,12 @@ def uby_triples(tweet_graph, rep):
 def token_neighbors(tweet_id, tweet_graph):
     for post in g.subjects(SIOC.id, Literal(tweet_id)):
         for entity in g.objects(post, SCHEMA.mentions):
+            tweet_graph = tweetskb_triples(tweet_graph, entity)
             for rep in g.objects(entity, NEE.detectedAs):
+                tweet_graph.add((entity, NEE.detectedAs, rep))
                 # FIXME: Think about tokenization
-                for token in rep.split(" "):
-                    tweet_graph = tweetskb_triples(tweet_graph, entity, token)
-                    tweet_graph = uby_triples(tweet_graph, token)
+                for token in str(rep).split(" "):
+                    tweet_graph = uby_triples(tweet_graph, Literal(token))
     return tweet_graph
 
 
@@ -211,7 +211,7 @@ def frequent_itemsets(rows, min_sup=0.027, max_length=5):
     last_l = l1
     lk = l1
 
-    while len(lk) > 0 and k <= max_length:
+    while len(lk) > 0 and k + 1 <= max_length:
         k = len(next(iter(lk)))
         ck = candidate_itemsets(lk, k)
         ck_len = len(ck)
@@ -239,7 +239,7 @@ def frequent_itemsets(rows, min_sup=0.027, max_length=5):
             print(f"Selected {len(lk)}/{ck_len} candidates i.e. the "
                   f"{round((len(lk) / float(ck_len)) * 100.0, ndigits=2)}% of them.")
 
-    items = [[] for _ in range(k)]
+    items = [[] for _ in range(k+1)]
 
     for el in last_l:
         items[len(el) - 1].append(el)

@@ -1,6 +1,7 @@
 *.n3
 *.nt
 *.txt
+*.tsv
 .idea
 related
 tweets

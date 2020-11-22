@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-[[ "$#" -ne 1 ]] && echo "Usage $(basename $0) /path/to/triples.nt" && exit 1
+[[ "$#" -ne 1 ]] && echo "Usage $(basename $0) /path/to/triples.n3" && exit 1
 
 rg "rdf:type nee:Entity" "${1}" | while read -r line;
 do

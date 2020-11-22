@@ -1,51 +1,63 @@
-import csv
+import sys
 import time
+from argparse import ArgumentParser
 from collections import defaultdict
 from itertools import permutations
 from pathlib import Path
 
 from rdflib import Graph, URIRef
 
-PROJECT = Path("/home/orang3/code/tweet-extraction")
-DBPEDIA = Path(PROJECT, "mappingbased_properties_cleaned_en.nt")
-
 props = defaultdict(int)
 
 
 def get_uri(lines):
-    return map(lambda l: l.rstrip().split(" ")[1], lines)
+    return map(lambda l: l.rstrip().split("\t")[1], lines)
 
 
-def export_results(tweet, sub, obj, preds):
-    result_path = Path(PROJECT, "tweets", "with_rel", tweet.name)
+def export_results(tweet, sub, obj, preds, out_path):
+    result_path = Path(out_path, tweet.name[:-3] + "ttl")
     preds = list(preds)
+    graph = Graph()
     if len(preds) == 0:
         print(tweet.name + " contains no related entities")
-    with open(result_path, "a") as res:
-        for p in preds:
-            props[str(p)] += 1
-            res.write("<" + sub + "> " + p.n3() + " <" + obj + "> .\n")
+        return
+    for p in preds:
+        props[str(p)] += 1
+        graph.add((sub, p, obj))
+    graph.serialize(destination=str(result_path), format="turtle")
 
 
-def main():
+def main(args):
     g = Graph()
 
-    print("Loading " + str(DBPEDIA) + " ...")
+    print("Loading " + str(args.dbpedia) + " ...")
     start = time.time()
-    g = g.parse(location=str(DBPEDIA), format="nt")
+    g = g.parse(location=str(args.dbpedia), format="nt")
     print("Graph loaded in " + str((time.time() - start) / 60.0) + "m.")
 
-    for tweet in Path(PROJECT, "tweets").iterdir():
+    for tweet in args.tweets.iterdir():
         if tweet.is_file():
             with open(tweet) as f:
                 uris = get_uri(f.readlines())
             for p in permutations(uris, 2):
-                export_results(tweet, p[0], p[1], g.predicates(URIRef(p[0]), URIRef(p[1])))
+                export_results(tweet,
+                               p[0],
+                               p[1],
+                               g.predicates(URIRef(p[0]), URIRef(p[1])),
+                               args.out_dir)
 
 
 if __name__ == "__main__":
-    main()
-    with open(Path(PROJECT, "tweets", "props.csv"), "w") as csv_file:
-        writer = csv.writer(csv_file)
-        for key, value in props.items():
-            writer.writerow([key, value])
+    parser = ArgumentParser()
+    parser.add_argument("-t", "--tweets", type=Path, required=True,
+                        help="Path of the directory of the tweets with multiple entities.")
+    parser.add_argument("-d", "--dbpedia", type=Path, required=True,
+                        help="Path of the nt dump of Dbpedia.")
+    parser.add_argument("-o", "--out-dir", type=Path, required=True,
+                        help="Directory where the n3 graphs of all the tweets that contain one or more relationships "
+                             "will be exported.")
+    args = parser.parse_args()
+    main(args)
+    for key, value in props.items():
+        print(f"{key}\t{value}")
+    sys.exit(0)

@@ -38,34 +38,6 @@
     (description "Twitter library for Python")
     (license license:expat)))
 
-;; (define-public python-efficient-apriori
-;;   ;; Upstream didn't tag latest release.
-;;   (let ((revision "0")
-;;         (commit "4fcdd38fd487a2183ad42ead9a14ee7641e43914"))
-;;     (package
-;;    (name "python-efficient-apriori")
-;;    (version (git-version "1.1.1" revision commit))
-;;    (source
-;;       (origin
-;;         (method git-fetch)
-;;         (uri (git-reference
-;;                (url "https://github.com/tommyod/Efficient-Apriori")
-;;                (commit commit)))
-;;         (file-name (git-file-name name version))
-;;         (sha256
-;;          (base32
-;;           "0dvl4l5343dvk5arfrrb2lr4bxz0kaf45wa4ph13r7mi4nqg0ayw"))))
-;;    (build-system python-build-system)
-;;    (arguments
-;;     `(#:tests? #f))
-;;    (home-page
-;; 	"https://github.com/tommyod/Efficient-Apriori")
-;;    (synopsis
-;; 	"An efficient Python implementation of the Apriori algorithm.")
-;;    (description
-;; 	"An efficient Python implementation of the Apriori algorithm.")
-;;    (license license:expat))))
-
 (concatenate-manifests
  (list
   (packages->manifest
@@ -75,6 +47,7 @@
      "graphviz"
      "guile"
      "guile-sparql"
+     "make"
      "python-numpy"
      "python-rdflib"
      "python-requests"

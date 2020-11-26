@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+import os
 import pickle
 import time
+from argparse import ArgumentParser
 
-from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
 
@@ -11,63 +12,47 @@ from rdflib import Graph, Namespace, Literal
 from rdflib.namespace import RDF, NamespaceManager
 from rdflib.term import Node
 
-PROJECT_ROOT = Path("/home/orang3/code/Thesis")
+PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis")
 
-TWEETS_DIR = Path(PROJECT_ROOT, "tweet-extraction")
-TWEETS = Path(TWEETS_DIR, "first_10M_lines.n3")
+TWEETS = Path(PROJECT_ROOT, "tweet-extraction", "first_10M_lines.n3")
 
-GENERATED = Path(PROJECT_ROOT, "fim", "generated")
-if not GENERATED.is_dir():
-    GENERATED.mkdir(parents=True, exist_ok=True)
+FIM = Path(PROJECT_ROOT, "fim")
+GENERATED = Path(FIM, "generated")
 
 UBY_DIR = Path(PROJECT_ROOT, "UBY")
 UBY_NEIGHBORS = Path(UBY_DIR, "uby-neighbors.nt")
 
+DBO = Namespace("http://dbpedia.org/ontology/")
 SCHEMA = Namespace("http://schema.org/")
 NEE = Namespace("http://www.ics.forth.gr/isl/oae/core#")
 SIOC = Namespace("http://rdfs.org/sioc/ns#")
 LEMON = Namespace("http://www.monnet-project.eu/lemon#")
 
 g = Graph()
-for prefix in [("lemon", LEMON),
-               ("nee", NEE),
-               ("rdf", RDF),
-               ("schema", SCHEMA),
-               ("sioc", SIOC)]:
-    g.bind(*prefix)
 
 
-for kb, fmt in [(TWEETS, "n3"), (UBY_NEIGHBORS, "nt")]:
-    print("Loading " + str(kb) + "...")
-    start = time.time()
-    g.parse(location=str(kb), format=fmt)
-    print(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
+def load_graphs():
+    merge_graph = Graph()
+    for prefix in [("lemon", LEMON),
+                   ("nee", NEE),
+                   ("dbo", DBO),
+                   ("rdf", RDF),
+                   ("schema", SCHEMA),
+                   ("sioc", SIOC)]:
+        merge_graph.bind(*prefix)
 
+    for kb, fmt in [(TWEETS, "n3")]:
+        print("Loading " + str(kb) + "...")
+        start = time.time()
+        merge_graph.parse(location=str(kb), format=fmt)
+        print(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
 
-def visit_tweet_graph(node, current_level=0, max_level=10, visited=defaultdict(bool)):
-    for t in g.triples((node, None, None)):
-        if not visited[t]:
-            visited[t] = True
-            yield t
-        if current_level <= (max_level - 1):
-            yield from visit_tweet_graph(t[2],
-                                         current_level=(current_level + 1),
-                                         visited=visited)
+    return merge_graph
 
 
 def tweetskb_triples(tweet_graph, entity):
     for uri in g.objects(entity, NEE.hasMatchedURI):
         tweet_graph.add((entity, NEE.hasMatchedURI, uri))
-    return tweet_graph
-
-
-def uby_triples(tweet_graph, rep):
-    for canonical_form in g.subjects(LEMON.writtenRep, rep):
-        tweet_graph.add((canonical_form, LEMON.writtenRep, rep))
-        for sense in g.subjects(LEMON.canonicalForm, canonical_form):
-            tweet_graph.add((sense, LEMON.canonicalForm, canonical_form))
-            for t in visit_tweet_graph(sense, max_level=3):
-                tweet_graph.add(t)
     return tweet_graph
 
 
@@ -77,9 +62,6 @@ def token_neighbors(tweet_id, tweet_graph):
             tweet_graph = tweetskb_triples(tweet_graph, entity)
             for rep in g.objects(entity, NEE.detectedAs):
                 tweet_graph.add((entity, NEE.detectedAs, rep))
-                # FIXME: Think about tokenization
-                for token in str(rep).split(" "):
-                    tweet_graph = uby_triples(tweet_graph, Literal(token))
     return tweet_graph
 
 
@@ -98,12 +80,17 @@ def bag_of_triples(tweet_graph):
 def get_tweets(paths):
     for tweet in paths:
         tweet_graph = Graph()
-        tweet_id = str(tweet.name)[1:][:-3]
+        tweet_id = str(tweet.name)[1:][:-4]
 
         # Add TOKEN related triples.
         tweet_graph = token_neighbors(tweet_id, tweet_graph)
         # Add DBPEDIA entities triples.
-        tweet_graph.parse(location=str(tweet), format="nt")
+        tweet_graph.parse(location=str(tweet), format="ttl")
+        # Add UBY triples
+        uby_triples = Path(UBY_NEIGHBORS, f"t{tweet_id}.ttl")
+        # Not all tweets can be linked to UBY
+        if uby_triples.is_file():
+            tweet_graph.parse(location=str(uby_triples), format="ttl")
 
         tweet_graph.serialize(destination=str(Path(GENERATED, f"t{tweet_id}.ttl")), format="turtle")
 
@@ -232,14 +219,14 @@ def frequent_itemsets(rows, min_sup=0.027, max_length=5):
 
         last_l = last_l | lk
 
-        with open(f"last_{k + 1}.pickle", "wb") as fp:
+        with open(Path(FIM, f"last_{k + 1}.pickle"), "wb") as fp:
             pickle.dump(last_l, fp)
 
         if ck_len > 0:
             print(f"Selected {len(lk)}/{ck_len} candidates i.e. the "
                   f"{round((len(lk) / float(ck_len)) * 100.0, ndigits=2)}% of them.")
 
-    items = [[] for _ in range(k+1)]
+    items = [[] for _ in range(k + 1)]
 
     for el in last_l:
         items[len(el) - 1].append(el)
@@ -247,7 +234,7 @@ def frequent_itemsets(rows, min_sup=0.027, max_length=5):
     return items, supports
 
 
-def create_rules(freq_items, min_confidence):
+def create_rules(freq_items, supports, min_confidence):
     """
     create the association rules, the rules will be a list.
     each element is a tuple of size 4, containing rules,
@@ -312,34 +299,34 @@ def compute_conf(supports, freq_set, subsets, min_confidence):
     return rules, right_hand_side
 
 
-if __name__ == "__main__":
+def main():
     # get itemsets
-    tweets = get_tweets(Path(TWEETS_DIR, "related", "relations").iterdir())
+    tweets = get_tweets(Path(TWEETS).iterdir())
     bags = map(bag_of_terms, tweets)
 
     columns, rows = build_db(bags)
 
-    np.save("rows", rows)
-    np.save("columns", columns, allow_pickle=True)
+    np.save(Path(FIM, "rows"), rows)
+    np.save(Path(FIM, "columns"), columns, allow_pickle=True)
 
-    columns = np.load("columns.npy", allow_pickle=True)
-    rows = np.load("rows.npy")
+    columns = np.load(Path(FIM, "columns.npy"), allow_pickle=True)
+    rows = np.load(Path(FIM, "rows.npy"))
 
     last_l, supports = frequent_itemsets(rows)
 
-    with open("last.pickle", "wb") as fp:
+    with open(Path(FIM, "last.pickle"), "wb") as fp:
         pickle.dump(last_l, fp)
 
-    with open("supports.pickle", "wb") as fp:
+    with open(Path(FIM, "supports.pickle"), "wb") as fp:
         pickle.dump(supports, fp)
 
-    with open("last.pickle", "rb") as fp:
+    with open(Path(FIM, "last.pickle"), "rb") as fp:
         last_l = pickle.load(fp)
-    with open("supports.pickle", "rb") as fp:
+    with open(Path(FIM, "supports.pickle"), "rb") as fp:
         supports = pickle.load(fp)
 
-    rules = create_rules(last_l, min_confidence=0.01)
-    with open("rules.pickle", "wb") as fp:
+    rules = create_rules(last_l, supports, min_confidence=0.01)
+    with open(Path(FIM, "rules.pickle"), "wb") as fp:
         pickle.dump(rules, fp)
 
     join_urls = lambda urls: "\n".join(columns[i] for i in urls)
@@ -350,3 +337,29 @@ if __name__ == "__main__":
         msg = f"{left}\n\n=>\n\n{right}\n\nwith confidence {conf} and lift {lift}"
         print(msg)
         print("---------------------------------------------------------")
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("-t", "--tweets-graph", type=Path, required=True,
+                        help="Path of .n3 graph representing the tweets and entities.")
+    parser.add_argument("-r", "--related", type=Path, required=True,
+                        help="Path of directory the graphs of the tweets that have at least one relationship between "
+                             "their entities.")
+    parser.add_argument("-u", "--uby-neighbors", type=Path, required=True,
+                        help="Path of the graphs of the neighbors of all the tokens in a tweet.")
+    parser.add_argument("-o", "--out-dir", type=Path, required=True,
+                        help="Directory where the Turtle graphs of all the tweets that contain one or more "
+                             "relationships will be exported.")
+
+    args = parser.parse_args()
+    FIM = args.out_dir
+    GENERATED = Path(FIM, "generated")
+    UBY_NEIGHBORS = args.uby_neighbors
+    TWEETS = args.tweets_graph
+
+    GENERATED.mkdir(exist_ok=True, parents=True)
+
+    g = load_graphs()
+
+    main()

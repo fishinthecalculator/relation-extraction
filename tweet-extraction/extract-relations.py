@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from argparse import ArgumentParser
@@ -11,7 +12,7 @@ props = defaultdict(int)
 
 
 def get_uri(lines):
-    return map(lambda l: l.rstrip().split("\t")[1], lines)
+    return map(lambda l: l.rstrip(), lines)
 
 
 def export_results(tweet, sub, obj, preds, out_path):
@@ -39,11 +40,14 @@ def main(args):
         if tweet.is_file():
             with open(tweet) as f:
                 uris = get_uri(f.readlines())
+            args.out_dir.mkdir(exist_ok=True, parents=True)
             for p in permutations(uris, 2):
+                s = URIRef(p[0])
+                o = URIRef(p[1])
                 export_results(tweet,
-                               p[0],
-                               p[1],
-                               g.predicates(URIRef(p[0]), URIRef(p[1])),
+                               s,
+                               o,
+                               g.predicates(s, o),
                                args.out_dir)
 
 

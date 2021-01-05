@@ -6,30 +6,21 @@ define project
 define tweet-extraction
   string-append project "/tweet-extraction"
 
-define tweets-and-entities.tsv "/tmp/tweets_and_entities.tsv"
+define tweets-and-entities
+  string-append tweet-extraction "/tweets_and_entities"
 
 define tweets-dir
-  string-append tweet-extraction "/tweets"
-
-define properties.csv "/tmp/properties.csv"
+  string-append tweets-and-entities "/tweets"
 
 define related
   string-append tweet-extraction "/related"
 
 process select-tweets-entities
-  packages "sed" "ripgrep"
+  packages "sed" "ripgrep" "parallel" "coreutils"
   inputs "triples"
-  outputs tae: tweets-and-entities.tsv
+  outputs tweets: tweets-and-entities
   # bash {
-    tweet-extraction/select-tweets-entities.sh {{inputs}} > {{outputs:tae}}
-  }
-
-process tweets-with-multiple-entities
-  packages "coreutils" "ripgrep"
-  inputs tae: tweets-and-entities.tsv
-  outputs tweets: tweets-dir
-  # bash {
-    tweet-extraction/tweets-with-multiple-entities.sh {{inputs:tae}} {{outputs:tweets}}
+    tweet-extraction/select-tweets-entities.sh {{inputs}} {{outputs:tweets}}
   }
 
 process tweets-with-dbpedia-relations
@@ -39,9 +30,8 @@ process tweets-with-dbpedia-relations
     . db: "dbpedia"
   outputs
     . rel: related
-    . props: properties.csv
   # bash {
-    python tweet-extraction/extract-relations.py -t {{inputs:tweets}} -d {{inputs:db}} -o {{outputs:rel}} > {{outputs:props}}
+    python tweet-extraction/extract-relations.py -t {{inputs:tweets}} -d {{inputs:db}} -o {{outputs:rel}}
   }
 
 
@@ -49,5 +39,4 @@ workflow thesis
   processes
     auto-connect
       . select-tweets-entities
-      . tweets-with-multiple-entities
       . tweets-with-dbpedia-relations

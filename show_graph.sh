@@ -7,5 +7,6 @@ if [[ "$#" -ne 2 ]]; then
 fi
 
 rdf=$(basename $1 | sed -E "s/\..*$//")
+out_dir=$(dirname $1)
 
-rapper -i "$2"  -o dot "$1" | dot -Tsvg -o"${rdf}.svg"
+rapper -i "$2"  -o dot "$1" | dot -Tsvg -o"${out_dir}/${rdf}.svg"

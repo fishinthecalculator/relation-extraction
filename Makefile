@@ -6,8 +6,6 @@ TEST_UBY="${TEST_DIR}/uby"
 TEST_TWEETSKB="${TEST_DIR}/tweetskb"
 TEST_DBPEDIA="${TEST_DIR}/dbpedia"
 
-GENERATED=run.svg inputs/uby inputs/split inputs/tweetskb inputs/dbpedia "${TEST_DIR}" results/entities/*.tsv results/entities/db/*.tsv results/related/*.ttl results/fim/*.pickle results/fim/*.npy results/fim/graphs/*.svg results/fim/*.txt results/fim/graphs/*.ttl results/uby-neighbors/*.ttl
-
 FREE_INPUTS=--input=inputs/uby=datasets/vn.nt --input=inputs/split=./SPLIT_TOKEN --input=inputs/tweetskb=datasets/first_10M_lines.n3 --input=inputs/dbpedia=datasets/mappingbased_properties_cleaned_en.nt
 
 N_LINES=5000
@@ -37,4 +35,5 @@ compress:
 	tar -cf archive/$(shell date +%Y-%m-%d+%H:%M).tar.bz2 --use-compress-prog=pbzip2 results/
 
 clean:
-	rm -rf ${GENERATED}
+	rm -rf results
+	git checkout -- results

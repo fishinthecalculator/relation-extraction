@@ -10,6 +10,7 @@ process select-tweets-entities (with state-dir)
     . entities: : string-append state-dir "/entities"
   # bash {
     bin/select_tweets_entities.sh {{inputs:tweetskb}} {{outputs:entities}}
+    cat results/entities/db/ids.tsv | sort -u > results/entities/db/unique_ids.tsv
   }
 
 process dbpedia-relationships (with state-dir)

@@ -1,0 +1,41 @@
+tokenioze also the text between entities, and also a couple of tokens on the left an right
+
+- have a parmeter that controls the length of substrings
+- explore different kinds of extraction such as
+
+"is married to"
+"is */VBZ to"
+
+"is", "marries", "to" (1-grams)
+n-grams
+abstracted ngrams
+
+
+
+Barack is married to Michelle.
+
+
+The goal is to have a Rich Hybrid Representation i.e. combines syntactic and semantic info
+
+
+- tokens between, to the left, to the right of the entities
+-babelnet
+- dbpedia
+  + enrich the graph, but not too big
+- uby
+
+for FIM
+- look also to some triples patterns, try to parameterize sub or obj not pred
+
+Barack -> married to -> Michelle.
+
+=>
+
+X -> married to -> Michelle.
+
+Barack -> married to -> X.
+
+etc. and add them to the tweet.
+
+-> FIM high perf implementation https://borgelt.net/fpgrowth.html
+-> RULES PATTERNS

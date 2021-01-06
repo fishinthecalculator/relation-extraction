@@ -52,7 +52,6 @@ def export_graph(args, tweet_id, rep):
 
 
 def main(args):
-    args.out_dir.mkdir(parents=True, exist_ok=True)
     with open(args.entities_file) as fp:
         reader = csv.reader(fp, delimiter="\t")
         for i, line in enumerate(reader):

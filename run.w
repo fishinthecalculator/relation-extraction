@@ -1,17 +1,17 @@
-define tweet-extraction-workflow
-  load-workflow "tweet-extraction/run.w"
+define dbpedia-workflow
+  load-workflow "workflows/dbpedia.w"
 
 define uby-workflow
-  load-workflow "UBY/run.w"
+  load-workflow "workflows/uby.w"
 
 define fim-workflow
-  load-workflow "fim/run.w"
+  load-workflow "workflows/fim.w"
 
 workflow main
   processes
     apply
       . auto-connect
       append
-        workflow-processes tweet-extraction-workflow
+        workflow-processes dbpedia-workflow
         workflow-processes uby-workflow
         workflow-processes fim-workflow

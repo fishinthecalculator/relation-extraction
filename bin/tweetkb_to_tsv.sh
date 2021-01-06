@@ -4,9 +4,9 @@ set -euo pipefail
 [[ "$#" -ne 1 ]] && echo "Usage $(basename $0) /path/to/dir." && exit 1
 
 tweets_dir="${1%/}"
-entities_dir="${tweets_dir}/entities"
+entities_db_dir="${tweets_dir}/db"
 
-mkdir -p "${entities_dir}"
+mkdir -p "${entities_db_dir}"
 
 while read -r line;
 do
@@ -19,6 +19,6 @@ do
     token=$(echo "$line" | sed -E "s/^.+dAs (.+) ; nee:has.+$/\1/")
 
     echo -e "t${tweet_id}\t${entity}\t${uri}\t${token}" | \
-        tee -a "${tweets_dir}/tweets_and_entities.tsv" | \
-        cut -f 3 >> "${entities_dir}/t${tweet_id}.tsv"
+        tee -a "${entities_db_dir}/tweets_and_entities.tsv" | \
+        cut -f 3 >> "${tweets_dir}/t${tweet_id}.tsv"
 done

@@ -1,6 +1,0 @@
-**/*.npy
-**/*.log
-**/*.pickle
-.idea
-generated
-venv

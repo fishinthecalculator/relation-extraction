@@ -54,6 +54,7 @@
      "python-numpy"
      "python-rdflib"
      "python-requests"
+     "python-sqlalchemy"
      "python-wrapper"
      "raptor2"
      "ripgrep"))))

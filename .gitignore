@@ -5,3 +5,4 @@ triples
 uby
 **/venv
 **/.idea
+*.svg

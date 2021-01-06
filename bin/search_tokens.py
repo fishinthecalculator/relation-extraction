@@ -47,17 +47,15 @@ def export_graph(args, tweet_id, rep):
                               format="ttl")
     if ser is not None:
         ser.decode("utf-8")
-    else:
-        print(f"ERROR! {tweet_id}'s graph is None.")
 
 
 def main(args):
     with open(args.entities_file) as fp:
         reader = csv.reader(fp, delimiter="\t")
         for i, line in enumerate(reader):
-            assert len(
-                line) == 4, f'Line {i + 1} from {args.entities_file} contains {len(line)} cells:\n{" ".join(line)}'
-            tweet_id, e, uri, rep = line
+            assert len(line) == 3, \
+                f'Line {i + 1} from {args.entities_file} contains {len(line)} cells:\n{" ".join(line)}'
+            tweet_id, uri, rep = line
             for token in rep.split(SPLIT_TOKEN):
                 export_graph(args, tweet_id, token)
 

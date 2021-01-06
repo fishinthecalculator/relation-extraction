@@ -16,6 +16,9 @@ all: graph
 dbpedia: graph
 	guix workflow -r workflows/dbpedia.w ${FREE_INPUTS}
 
+uby: graph
+	guix workflow -r workflows/uby.w ${FREE_INPUTS}
+
 fim: graph
 	guix workflow -r workflows/fim.w ${FREE_INPUTS}
 

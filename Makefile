@@ -1,6 +1,6 @@
 HERE=$(shell pwd)
 
-TEST_DIR=${HERE}/test-inputs
+TEST_DIR=${HERE}/inputs
 
 TEST_UBY="${TEST_DIR}/uby"
 TEST_TWEETSKB="${TEST_DIR}/tweetskb"
@@ -27,7 +27,7 @@ test: graph
 
 	head -n ${N_LINES} datasets/vn.nt > ${TEST_UBY}
 	head -n ${N_LINES} datasets/first_10M_lines.n3 > ${TEST_TWEETSKB}
-	head -n ${N_LINES}00 datasets/mappingbased_properties_cleaned_en.nt > ${TEST_DBPEDIA}
+	head -n ${N_LINES} datasets/mappingbased_properties_cleaned_en.nt > ${TEST_DBPEDIA}
 
 	guix workflow -r run.w --input=inputs/uby=${TEST_UBY} --input=inputs/split=./SPLIT_TOKEN --input=inputs/tweetskb=${TEST_TWEETSKB} --input=inputs/dbpedia=${TEST_DBPEDIA}
 
@@ -38,5 +38,5 @@ compress:
 	tar -cf archive/$(shell date +%Y-%m-%d+%H:%M).tar.bz2 --use-compress-prog=pbzip2 results/
 
 clean:
-	rm -rf results
-	git checkout -- results
+	rm -rf results "${TEST_DIR}"/*
+	git checkout -- results inputs

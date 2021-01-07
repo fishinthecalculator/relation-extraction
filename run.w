@@ -4,6 +4,12 @@ define dbpedia-workflow
 define uby-workflow
   load-workflow "workflows/uby.w"
 
+define tweet-ids-workflow
+  load-workflow "workflows/tweet-ids.w"
+
+define tweetskb-workflow
+  load-workflow "workflows/tweetskb.w"
+
 define fim-workflow
   load-workflow "workflows/fim.w"
 
@@ -14,4 +20,6 @@ workflow main
       append
         workflow-processes dbpedia-workflow
         workflow-processes uby-workflow
+        workflow-processes tweet-ids-workflow
+        workflow-processes tweetskb-workflow
         workflow-processes fim-workflow

@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 import os
 import pickle
+import sys
 import time
-from argparse import ArgumentParser
 
 from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
 
 import numpy as np
-from rdflib import Graph, Namespace, Literal
-from rdflib.namespace import RDF, RDFS, XSD, DC, NamespaceManager
+from rdflib import Graph
 from rdflib.term import Node
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.insert(0, this_dir)
+from kb.graph import load
+from util import make_parser, process_stdin_or_file
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis")
 
@@ -23,76 +28,26 @@ FIM = Path(PROJECT_ROOT, "fim")
 GRAPHS = Path(FIM, "generated")
 
 UBY_DIR = Path(PROJECT_ROOT, "UBY")
-UBY_NEIGHBORS = Path(UBY_DIR, "uby-neighbors.nt")
+UBY_NEIGHBORS = Path(UBY_DIR, "uby-neighbors")
 
-NEE = Namespace("http://www.ics.forth.gr/isl/oae/core#")
-SCHEMA = Namespace("http://schema.org/")
-SIOC = Namespace("http://rdfs.org/sioc/ns#")
-SIOC_T = Namespace("http://rdfs.org/sioc/types#")
-ONYX = Namespace("http://www.gsi.dit.upm.es/ontologies/onyx/ns#")
-WNA = Namespace("http://www.gsi.dit.upm.es/ontologies/wnaffect/ns#")
-
-LEMON = Namespace("http://www.monnet-project.eu/lemon#")
-DBO = Namespace("http://dbpedia.org/ontology/")
-
-g = Graph()
-
-
-def load_graphs():
-    merge_graph = Graph()
-    for prefix in [("rdf", RDF),
-                   ("rdfs", RDFS),
-                   ("xsd", XSD),
-                   ("dc", DC),
-                   ("lemon", LEMON),
-                   ("nee", NEE),
-                   ("dbo", DBO),
-                   ("schema", SCHEMA),
-                   ("wna", WNA),
-                   ("SIOC_T", SIOC_T),
-                   ("onyx", ONYX),
-                   ("sioc", SIOC)]:
-        merge_graph.bind(*prefix)
-
-    for kb, fmt in [(TWEETS, "n3")]:
-        print("Loading " + str(kb) + "...")
-        start = time.time()
-        merge_graph.parse(location=str(kb), format=fmt)
-        print(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
-
-    return merge_graph
-
-
-def tweetskb_triples(tweet_graph, entity):
-    for uri in g.objects(entity, NEE.hasMatchedURI):
-        tweet_graph.add((entity, NEE.hasMatchedURI, uri))
-    return tweet_graph
-
-
-def token_neighbors(tweet_id, tweet_graph):
-    for post in g.subjects(SIOC.id, Literal(tweet_id)):
-        for entity in g.objects(post, SCHEMA.mentions):
-            tweet_graph = tweetskb_triples(tweet_graph, entity)
-            for rep in g.objects(entity, NEE.detectedAs):
-                tweet_graph.add((entity, NEE.detectedAs, rep))
-    return tweet_graph
+DBPEDIA_NEIGHBORS = Path(PROJECT_ROOT, "results", "related")
+TWEETSKB_NEIGHBORS = Path(PROJECT_ROOT, "results", "entities")
 
 
 def bag_of_terms(tweet_graph):
     bag = list()
     for triple in tweet_graph.triples((None, None, None)):
         bag.append(triple[0])
-        bag.append(triple[1])
+        # bag.append(triple[1])
         bag.append(triple[2])
-        bag.append(f"{triple[0]}_{triple[1]}_{triple[2]}")
+        # bag.append(f"{triple[0]}_{triple[1]}_{triple[2]}")
 
         # BA :spouse :MA
         # bag { :BA, :spouse, :MA, ?v0-:spouse-:MA, .... }
         # the indices of the variable are progressive naturals
 
-
-        bag.append(f"{triple[0]}_{triple[1]}_X")
-        bag.append(f"X_{triple[1]}_{triple[2]}")
+        # bag.append(f"{triple[0]}_{triple[1]}_X")
+        # bag.append(f"X_{triple[1]}_{triple[2]}")
 
     return bag
 
@@ -101,24 +56,19 @@ def bag_of_triples(tweet_graph):
     return tuple(triple for triple in tweet_graph.triples((None, None, None)))
 
 
-def get_tweets(paths):
-    for tweet in paths:
-        tweet_graph = Graph()
-        tweet_id = str(tweet.name)[1:][:-4]
+def merge_graphs(tweet_id):
+    tweet_graph = Graph()
 
-        # Add TOKEN related triples.
-        tweet_graph = token_neighbors(tweet_id, tweet_graph)
-        # Add DBPEDIA entities triples.
-        tweet_graph.parse(location=str(tweet), format="ttl")
-        # Add UBY triples
-        uby_triples = Path(UBY_NEIGHBORS, f"t{tweet_id}.ttl")
-        # Not all tweets can be linked to UBY
-        if uby_triples.is_file():
-            tweet_graph.parse(location=str(uby_triples), format="ttl")
+    # Merge tweet graphs.
+    datasets = [UBY_NEIGHBORS, DBPEDIA_NEIGHBORS, TWEETSKB_NEIGHBORS]
+    for d in datasets:
+        triples = Path(d, f"{tweet_id}.ttl")
+        if triples.is_file():
+            tweet_graph = load(triples, fmt="turtle")
 
-        tweet_graph.serialize(destination=str(Path(GRAPHS, f"t{tweet_id}.ttl")), format="turtle")
+    tweet_graph.serialize(destination=str(Path(GRAPHS, f"t{tweet_id}.ttl")), encoding="utf-8", format="turtle")
 
-        yield tweet_graph
+    return tweet_graph
 
 
 def build_db(bags):
@@ -416,15 +366,21 @@ def create_rules(freq_items, supports, min_confidence):
     return association_rules
 
 
-def main():
+def main(args):
     rows_npy_path = Path(FIM, "rows.npy")
     last_l_pickle = Path(FIM, "last.pickle")
     supports_pickle = Path(FIM, "supports.pickle")
     rules_pickle_path = Path(FIM, "rules.pickle")
 
     if not rows_npy_path.is_file():
-        tweets = get_tweets(Path(TWEETS_WITH_RELATIONS).iterdir())
-        bags = map(bag_of_terms, tweets)
+        def process(lines):
+            for line in lines:
+                merge_graphs(line.strip())
+
+        process_stdin_or_file(args, process)
+
+        tweet_graphs = map(load, GRAPHS.glob("*.ttl"))
+        bags = map(bag_of_terms, tweet_graphs)
         columns, rows = build_db(bags)
 
         np.save(Path(FIM, "rows"), rows)
@@ -450,30 +406,27 @@ def main():
         rules = create_rules(last_l, supports, min_confidence=0.01)
         with open(rules_pickle_path, "wb") as fp:
             pickle.dump(rules, fp)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("-t", "--tweets-graph", type=Path, required=True,
-                        help="Path of the TweetsKB graph representing the tweets and entities.")
-    parser.add_argument("-r", "--related", type=Path, required=True,
-                        help="Path of directory the graphs of the tweets that have at least one relationship between "
-                             "their entities.")
-    parser.add_argument("-u", "--uby-neighbors", type=Path, required=True,
+    parser = make_parser("FIM")
+    parser.add_argument("-t", "--tweetskb", type=Path, required=True,
+                        help="Path of the TweetsKB graphs representing the tweets.")
+    parser.add_argument("-d", "--dbpedia", type=Path, required=True,
+                        help="Path of the Dbpedia graphs representing the entities.")
+    parser.add_argument("-u", "--uby", type=Path, required=True,
                         help="Path of the graphs of the neighbors of all the tokens in a tweet.")
-    parser.add_argument("-o", "--out-dir", type=Path, required=True,
-                        help="Directory where the Turtle graphs of all the tweets that contain one or more "
-                             "relationships will be exported.")
 
     args = parser.parse_args()
+
     FIM = args.out_dir
     GRAPHS = Path(FIM, "graphs")
-    UBY_NEIGHBORS = args.uby_neighbors
-    TWEETS = args.tweets_graph
-    TWEETS_WITH_RELATIONS = args.related
+
+    UBY_NEIGHBORS = args.uby
+    DBPEDIA_NEIGHBORS = args.dbpedia
+    TWEETSKB_NEIGHBORS = args.tweetskb
 
     print(f"Output will be generated at {FIM}")
 
-    g = load_graphs()
-
-    main()
+    main(args)

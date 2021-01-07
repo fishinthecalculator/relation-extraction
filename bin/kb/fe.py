@@ -1,0 +1,157 @@
+from abc import ABC, abstractmethod
+from collections import defaultdict
+from itertools import permutations
+from pathlib import Path
+
+from rdflib import Graph, Literal, URIRef
+from rdflib.util import guess_format
+
+from .graph import load, sub_obj_dfs
+from .prefix import NEE, SIOC, SCHEMA, LEMON
+
+
+def cut(strings, field: int, sep="\t"):
+    """
+    Implements the cut command.
+    Parameters
+    ----------
+    strings: List of strings to cut.
+    field: Column to select.
+    sep: Separation token.
+
+    Returns
+    -------
+    Generator of the nth fields of the input strings, splitted by sep.
+    """
+    return list(string.rstrip().split(sep)[field] for string in strings)
+
+
+class FeatureExtractor(ABC):
+    def __init__(self, data_path: Path, out_path: Path):
+        self.data_path = data_path
+        self.out_path = out_path
+        self.data_is_loaded = False
+        self.g = Graph()
+        super().__init__()
+
+    def load_data(self, fmt=""):
+        if not self.data_is_loaded:
+            if not fmt:
+                fmt = guess_format(str(self.data_path))
+            self.g = load(self.data_path, fmt)
+            self.data_is_loaded = True
+
+    @abstractmethod
+    def _extract(self, tweet_id):
+        pass
+
+    def extract(self, tweet_id):
+        assert self.data_is_loaded, f"{self.data_path} has not been loaded! You MUST call `extractor.load_data()` !"
+        return self._extract(tweet_id)
+
+    def extract_export(self, tweet_id):
+        graph = self.extract(tweet_id)
+        if graph is not None:
+            self.export(graph, tweet_id)
+
+    def process_tweets(self, tweet_ids):
+        for tweet_id in tweet_ids:
+            self.extract_export(tweet_id.strip())
+
+    def export(self, graph, tweet_id, fmt="turtle"):
+        graph.serialize(destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
+                        encoding="utf-8",
+                        format=fmt)
+
+
+class DbpediaFE(FeatureExtractor):
+    def __init__(self, data_path: Path, out_path: Path, tweets_path: Path, max_level=3):
+        super().__init__(data_path, out_path)
+        self.props = defaultdict(int)
+        self.tweets_path = tweets_path
+        self.max_level = max_level
+
+    @staticmethod
+    def get_uris(tweet):
+        with open(tweet) as f:
+            uris = cut(f.readlines(), 0)
+        return uris
+
+    def _extract(self, tweet_id):
+        graph = Graph()
+        graph_path = Path(self.tweets_path, f"t{tweet_id}.ttl")
+        if graph_path.is_file():
+            uris = DbpediaFE.get_uris(graph_path)
+            if 0 < len(uris) < 2:
+                # Add n-hops neighbors.
+                for t in sub_obj_dfs(self.g, uris[0], max_level=self.max_level):
+                    graph.add(t)
+            elif len(uris) >= 2:
+                for perm in permutations(uris, 2):
+                    sub = URIRef(perm[0])
+                    obj = URIRef(perm[1])
+
+                    # Add all relations between sub and obj.
+                    for p in self.g.predicates(sub, obj):
+                        self.props[str(p)] += 1
+                        graph.add((sub, p, obj))
+
+                    # Add n-hops neighbors.
+                    for node in (sub, obj):
+                        for t in sub_obj_dfs(self.g, node, max_level=self.max_level):
+                            graph.add(t)
+
+        return graph
+
+
+class UbyFE(FeatureExtractor):
+    def __init__(self, data_path: Path, out_path: Path, entities_path: Path, split_token=" ", max_level=3):
+        super().__init__(data_path, out_path)
+        self.entities_path = entities_path
+        self.split_token = split_token
+        self.max_level = max_level
+
+    @staticmethod
+    def get_tokens(tweet):
+        with open(tweet) as f:
+            tokens = cut(f.readlines(), 1)
+        return tokens
+
+    def _extract(self, tweet_id):
+        graph = Graph()
+        graph_path = Path(self.entities_path, f"t{tweet_id}.ttl")
+        if graph_path.is_file():
+            words = (splitted
+                     for token in UbyFE.get_tokens(graph_path)
+                     for splitted in token.split(self.split_token))
+
+            for word in words:
+                rep = Literal(word)
+
+                # Add canonical forms of tokens.
+                for canonical_form in self.g.subjects(LEMON.writtenRep, rep):
+                    graph.add((canonical_form, LEMON.writtenRep, rep))
+
+                    # Add each sense of the canonical form.
+                    for sense in self.g.subjects(LEMON.canonicalForm, canonical_form):
+                        graph.add((sense, LEMON.canonicalForm, canonical_form))
+
+                        # Add n-hops neighbors.
+                        for t in sub_obj_dfs(self.g, sense, max_level=self.max_level):
+                            graph.add(t)
+        return graph
+
+
+class TweetsKbFE(FeatureExtractor):
+    def _extract(self, tweet_id):
+        tweet_graph = Graph()
+        for post in self.g.subjects(SIOC.id, Literal(tweet_id)):
+            for entity in self.g.objects(post, SCHEMA.mentions):
+                # Detected entity Dbpedia URI.
+                for uri in self.g.objects(entity, NEE.hasMatchedURI):
+                    tweet_graph.add((entity, NEE.hasMatchedURI, uri))
+
+                # Token from which the Dbpedia entity has been detected.
+                for rep in self.g.objects(entity, NEE.detectedAs):
+                    tweet_graph.add((entity, NEE.detectedAs, rep))
+        return tweet_graph

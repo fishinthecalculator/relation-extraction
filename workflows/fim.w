@@ -8,11 +8,12 @@ process run-fim (with state-dir)
   inputs
     . uby-dir: : string-append state-dir "/uby-neighbors"
     . rel: : string-append state-dir "/related"
-    . tweetskb: "inputs/tweetskb"
+    . tweets: : string-append state-dir "/tweets"
+    . tweetskb-dir: : string-append state-dir "/tweetskb"
   outputs
     . fim-out: : string-append state-dir "/fim"
   # bash {
-    python bin/fim.py -t {{inputs:tr}} -u {{inputs:uby-dir}} -r {{inputs:rel}} -o {{outputs:fim-out}}\
+    python bin/fim.py -t {{inputs:tweetskb-dir}} -i {{inputs:tweets}} -u {{inputs:uby-dir}} -d {{inputs:rel}} -o {{outputs:fim-out}}
 
     python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s cosine > {{outputs:fim-out}}/rules_cosine.txt
     python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s maxconf > {{outputs:fim-out}}/rules_maxconf.txt
@@ -28,7 +29,7 @@ process run-show-graph (with state-dir)
   inputs
     . fim-out: : string-append state-dir "/fim"
   # bash {
-    parallel "bin/show-graph.sh {} turtle" ::: {{inputs:fim-out}}/graphs/*.ttl
+    parallel "bin/show_graph.sh {} turtle" ::: {{inputs:fim-out}}/graphs/*.ttl
   }
 
 workflow frequent-itemset-mining

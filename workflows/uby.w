@@ -3,17 +3,18 @@ define default-state-dir
     getcwd
     . "/results"
 
-process search-tokens (with state-dir)
+process uby-feature-extraction (with state-dir)
   packages "python-wrapper" "python-rdflib"
   inputs
     . split: "inputs/split"
     . entities: : string-append state-dir "/entities"
+    . tweets: : string-append state-dir "/tweets"
     . vn: "inputs/uby"
   outputs uby-dir: : string-append state-dir "/uby-neighbors"
   # bash {
-    python bin/search_tokens.py -e {{inputs:entities}}/db/tweets_and_entities.tsv -s {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-dir}}
+    python bin/fe_uby.py -t {{inputs:entities}} -i {{inputs:tweets}} -f {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-dir}}
   }
 
 workflow UBY
   processes
-    search-tokens default-state-dir
+    uby-feature-extraction default-state-dir

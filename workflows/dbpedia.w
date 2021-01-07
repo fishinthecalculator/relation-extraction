@@ -3,30 +3,19 @@ define default-state-dir
     getcwd
     . "/results"
 
-process select-tweets-entities (with state-dir)
-  packages "sed" "ripgrep" "parallel" "coreutils"
-  inputs tweetskb: "inputs/tweetskb"
-  outputs
-    . entities: : string-append state-dir "/entities"
-  # bash {
-    bin/select_tweets_entities.sh {{inputs:tweetskb}} {{outputs:entities}}
-    cat results/entities/db/ids.tsv | sort -u > results/entities/db/unique_ids.tsv
-  }
-
-process dbpedia-relationships (with state-dir)
+process dbpedia-feature-extraction (with state-dir)
   packages "python-wrapper" "python-rdflib"
   inputs
     . entities: : string-append state-dir "/entities"
+    . tweets: : string-append state-dir "/tweets"
     . db: "inputs/dbpedia"
   outputs
     . rel: : string-append state-dir "/related"
   # bash {
-    python bin/extract_relations.py -t {{inputs:entities}} -d {{inputs:db}} -o {{outputs:rel}}
+    python bin/fe_dbpedia.py -i {{inputs:tweets}} -t {{inputs:entities}} -d {{inputs:db}} -o {{outputs:rel}}
   }
 
 
 workflow dbpedia
   processes
-    auto-connect
-      select-tweets-entities default-state-dir
-      dbpedia-relationships default-state-dir
+    dbpedia-feature-extraction default-state-dir

@@ -1,4 +1,5 @@
 numpy
+pyfim
 rdflib
 requests
 SQLAlchemy

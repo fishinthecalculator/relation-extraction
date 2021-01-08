@@ -8,6 +8,7 @@ from collections import defaultdict
 from itertools import combinations
 from pathlib import Path
 
+import fim
 import numpy as np
 from rdflib import Graph
 from rdflib.term import Node
@@ -35,13 +36,6 @@ TWEETSKB_NEIGHBORS = Path(PROJECT_ROOT, "results", "entities")
 
 
 def bag_of_terms(tweet_graph):
-    bag = list()
-    for triple in tweet_graph.triples((None, None, None)):
-        bag.append(triple[0])
-        # bag.append(triple[1])
-        bag.append(triple[2])
-        # bag.append(f"{triple[0]}_{triple[1]}_{triple[2]}")
-
         # BA :spouse :MA
         # bag { :BA, :spouse, :MA, ?v0-:spouse-:MA, .... }
         # the indices of the variable are progressive naturals
@@ -49,7 +43,7 @@ def bag_of_terms(tweet_graph):
         # bag.append(f"{triple[0]}_{triple[1]}_X")
         # bag.append(f"X_{triple[1]}_{triple[2]}")
 
-    return bag
+    return (term for triple in tweet_graph.triples((None, None, None)) for term in triple)
 
 
 def bag_of_triples(tweet_graph):
@@ -367,12 +361,9 @@ def create_rules(freq_items, supports, min_confidence):
 
 
 def main(args):
-    rows_npy_path = Path(FIM, "rows.npy")
-    last_l_pickle = Path(FIM, "last.pickle")
-    supports_pickle = Path(FIM, "supports.pickle")
     rules_pickle_path = Path(FIM, "rules.pickle")
 
-    if not rows_npy_path.is_file():
+    if not rules_pickle_path.is_file():
         def process(lines):
             for line in lines:
                 merge_graphs(line.strip())
@@ -381,29 +372,8 @@ def main(args):
 
         tweet_graphs = map(load, GRAPHS.glob("*.ttl"))
         bags = map(bag_of_terms, tweet_graphs)
-        columns, rows = build_db(bags)
+        rules = fim.fpgrowth(bags)
 
-        np.save(Path(FIM, "rows"), rows)
-        np.save(Path(FIM, "columns"), columns, allow_pickle=True)
-
-    if (not last_l_pickle.is_file()) or (not supports_pickle.is_file()):
-        rows = np.load(rows_npy_path)
-
-        last_l, supports = frequent_itemsets(rows)
-
-        with open(last_l_pickle, "wb") as fp:
-            pickle.dump(last_l, fp)
-
-        with open(supports_pickle, "wb") as fp:
-            pickle.dump(supports, fp)
-
-    if not rules_pickle_path.is_file():
-        with open(last_l_pickle, "rb") as fp:
-            last_l = pickle.load(fp)
-        with open(supports_pickle, "rb") as fp:
-            supports = pickle.load(fp)
-
-        rules = create_rules(last_l, supports, min_confidence=0.01)
         with open(rules_pickle_path, "wb") as fp:
             pickle.dump(rules, fp)
     sys.exit(0)

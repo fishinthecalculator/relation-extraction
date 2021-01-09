@@ -60,7 +60,7 @@ def merge_graphs(tweet_id):
         if triples.is_file():
             tweet_graph = load(triples, fmt="turtle")
 
-    tweet_graph.serialize(destination=str(Path(GRAPHS, f"t{tweet_id}.ttl")), encoding="utf-8", format="turtle")
+    tweet_graph.serialize(destination=str(Path(GRAPHS, f"{tweet_id}.ttl")), encoding="utf-8", format="turtle")
 
     return tweet_graph
 

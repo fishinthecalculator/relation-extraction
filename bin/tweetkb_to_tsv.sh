@@ -16,7 +16,7 @@ do
 
     token=$(printf "%s\n" "$line" | sed -E "s/^.+dAs \"(.+)\" ; nee:has.+$/\1/")
 
-    printf "%s\t%s\n" "${uri}" "${token}" >> "${tweets_dir}/t${tweet_id}.tsv"
+    printf "%s\t%s\n" "${uri}" "${token}" >> "${tweets_dir}/${tweet_id}.tsv"
 done
 
 exit 0

@@ -79,7 +79,7 @@ class DbpediaFE(FeatureExtractor):
 
     def _extract(self, tweet_id):
         graph = Graph()
-        graph_path = Path(self.tweets_path, f"t{tweet_id}.ttl")
+        graph_path = Path(self.tweets_path, f"{tweet_id}.ttl")
         if graph_path.is_file():
             uris = DbpediaFE.get_uris(graph_path)
             if 0 < len(uris) < 2:
@@ -119,7 +119,7 @@ class UbyFE(FeatureExtractor):
 
     def _extract(self, tweet_id):
         graph = Graph()
-        graph_path = Path(self.entities_path, f"t{tweet_id}.ttl")
+        graph_path = Path(self.entities_path, f"{tweet_id}.ttl")
         if graph_path.is_file():
             words = (splitted
                      for token in UbyFE.get_tokens(graph_path)

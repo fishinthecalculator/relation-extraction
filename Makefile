@@ -35,7 +35,7 @@ graph:
 	guix workflow --graph=run.w | dot -Tsvg -o run.svg
 
 compress:
-	tar -cf archive/$(shell date +%Y-%m-%d+%H:%M).tar.bz2 --use-compress-prog=pbzip2 results/
+	tar -cf archive/$(shell date +%Y-%m-%d+%H:%M)-$(shell git log | head -1 | cut -d " " -f 2).tar.bz2 --use-compress-prog=pbzip2 results/
 
 clean:
 	rm -rf results "${TEST_DIR}"/*

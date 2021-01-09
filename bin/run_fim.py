@@ -43,7 +43,7 @@ def bag_of_terms(tweet_graph):
         # bag.append(f"{triple[0]}_{triple[1]}_X")
         # bag.append(f"X_{triple[1]}_{triple[2]}")
 
-    return (term for triple in tweet_graph.triples((None, None, None)) for term in triple)
+    return (str(term) for triple in tweet_graph.triples((None, None, None)) for term in triple)
 
 
 def bag_of_triples(tweet_graph):

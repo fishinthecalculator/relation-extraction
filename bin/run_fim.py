@@ -16,8 +16,8 @@ from rdflib.term import Node
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
+from util import make_parser, process_stdin_or_file, is_empty
 from kb.graph import load
-from util import make_parser, process_stdin_or_file
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis")
 
@@ -33,36 +33,6 @@ UBY_NEIGHBORS = Path(UBY_DIR, "uby-neighbors")
 
 DBPEDIA_NEIGHBORS = Path(PROJECT_ROOT, "results", "related")
 TWEETSKB_NEIGHBORS = Path(PROJECT_ROOT, "results", "entities")
-
-
-def bag_of_terms(tweet_graph):
-        # BA :spouse :MA
-        # bag { :BA, :spouse, :MA, ?v0-:spouse-:MA, .... }
-        # the indices of the variable are progressive naturals
-
-        # bag.append(f"{triple[0]}_{triple[1]}_X")
-        # bag.append(f"X_{triple[1]}_{triple[2]}")
-
-    return (str(term) for triple in tweet_graph.triples((None, None, None)) for term in triple)
-
-
-def bag_of_triples(tweet_graph):
-    return tuple(triple for triple in tweet_graph.triples((None, None, None)))
-
-
-def merge_graphs(tweet_id):
-    tweet_graph = Graph()
-
-    # Merge tweet graphs.
-    datasets = [UBY_NEIGHBORS, DBPEDIA_NEIGHBORS, TWEETSKB_NEIGHBORS]
-    for d in datasets:
-        triples = Path(d, f"{tweet_id}.ttl")
-        if triples.is_file():
-            tweet_graph = load(triples, fmt="turtle")
-
-    tweet_graph.serialize(destination=str(Path(GRAPHS, f"{tweet_id}.ttl")), encoding="utf-8", format="turtle")
-
-    return tweet_graph
 
 
 def build_db(bags):
@@ -182,7 +152,8 @@ def frequent_itemsets(rows, min_sup=0.027, max_length=5):
 
         # Select candidates
         for i, candidate in enumerate(ck):
-            print(f"Computing {item_to_string(candidate)} support...\t[{i + 1}/{ck_len}]")
+            print(
+                f"Computing {item_to_string(candidate)} support...\t[{i + 1}/{ck_len}]")
 
             support = compute_support(candidate, rows)
             supports[candidate] = support
@@ -339,7 +310,8 @@ def create_rules(freq_items, supports, min_confidence):
             # start with creating rules for single item on
             # the right hand side
             subsets = [frozenset([item]) for item in freq_set]
-            rules, right_hand_side = compute_metrics(supports, freq_set, subsets, min_confidence)
+            rules, right_hand_side = compute_metrics(
+                supports, freq_set, subsets, min_confidence)
             association_rules.extend(rules)
 
             # starting from 3-itemset, loop through each length item
@@ -353,27 +325,107 @@ def create_rules(freq_items, supports, min_confidence):
                 k = 1
                 while len(right_hand_side[0]) < len(freq_set) - 1:
                     ck = candidate_itemsets(right_hand_side, k)
-                    rules, right_hand_side = compute_metrics(supports, freq_set, ck, min_confidence)
+                    rules, right_hand_side = compute_metrics(
+                        supports, freq_set, ck, min_confidence)
                     association_rules.extend(rules)
                     k += 1
 
     return association_rules
 
 
+def bag_of_terms(tweet_graph):
+    # BA :spouse :MA
+    # bag { :BA, :spouse, :MA, ?v0-:spouse-:MA, .... }
+    # the indices of the variable are progressive naturals
+
+    # bag.append(f"{triple[0]}_{triple[1]}_X")
+    # bag.append(f"X_{triple[1]}_{triple[2]}")
+
+    # return tuple(str(term) for triple in tweet_graph.triples((None, None, None)) for term in triple)
+    return [str(term) for triple in tweet_graph.triples((None, None, None)) for term in triple]
+
+
+def bag_of_triples(tweet_graph):
+    return [triple for triple in tweet_graph.triples((None, None, None))]
+
+
+def merge_graphs(tweet_id):
+    tweet_graph = Graph()
+
+    # Merge tweet graphs.
+    datasets = [UBY_NEIGHBORS, DBPEDIA_NEIGHBORS, TWEETSKB_NEIGHBORS]
+    for d in datasets:
+        triples = Path(d, f"{tweet_id}.ttl")
+        if triples.is_file():
+            tweet_graph = load(triples, fmt="turtle")
+
+    if not is_empty(tweet_graph.triples((None, None, None))):
+        tweet_graph.serialize(destination=str(
+            Path(GRAPHS, f"{tweet_id}.ttl")), encoding="utf-8", format="turtle")
+
+    return tweet_graph
+
+
+def make_bags(func):
+    mapped_bags_pickle_path = Path(FIM, "mapped-bags.pickle")
+    headers_pickle_path = Path(FIM, "headers.pickle")
+    if not mapped_bags_pickle_path.is_file():
+        start = time.time()
+        bags = [bag for bag in map(func, map(load, GRAPHS.glob("*.ttl")))]
+        print(
+            f"Graphs loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
+
+        # Make a map of unique strings to natural numbers.
+        headers = dict(
+            [(y, x + 1) for x, y in enumerate(sorted(set(string for bag in bags for string in bag)))])
+        with open(headers_pickle_path, "wb") as fp:
+            pickle.dump(headers, fp)
+
+        l = []
+        for bag in bags:
+            d = defaultdict(int)
+            for i, string in enumerate(bag):
+                d[headers[string]] += 1
+                bag[i] = headers[string]
+            l.append(d)
+
+        with open(mapped_bags_pickle_path, "wb") as fp:
+            pickle.dump(bags, fp)
+    else:
+        with open(mapped_bags_pickle_path, "rb") as fp:
+            bags = pickle.load(fp)
+
+    return bags
+
+
 def main(args):
     rules_pickle_path = Path(FIM, "rules.pickle")
-
-    if not rules_pickle_path.is_file():
+    if is_empty(GRAPHS.glob("*.ttl")):
         def process(lines):
             for line in lines:
                 merge_graphs(line.strip())
 
         process_stdin_or_file(args, process)
 
-        tweet_graphs = map(load, GRAPHS.glob("*.ttl"))
-        bags = map(bag_of_terms, tweet_graphs)
-        rules = fim.fpgrowth(bags)
+    if not rules_pickle_path.is_file():
+        print("Computing bags of items...")
+        start = time.time()
+        bags = make_bags(bag_of_terms)
+        print(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")
 
+        print("Computing association rules...")
+        start = time.time()
+        rules = fim.fpgrowth(bags,
+                             target='r',  # Generate association rules
+                             # 1e-2 -> 0G 
+                             # 5e-3 -> little to no ram.. 
+                             # 1e-3 -> 15G and counting..
+                             supp=5e-3,
+                             zmin=2,
+                             report='C',  # Report rule confidence
+                             #  eval: measure for item set evaluation
+                             eval='k')    # conditional probability ratio
+        print(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")
         with open(rules_pickle_path, "wb") as fp:
             pickle.dump(rules, fp)
     sys.exit(0)

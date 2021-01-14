@@ -1,67 +1,38 @@
 import pickle
-import numpy as np
+import sys
 
 from argparse import ArgumentParser
 from pathlib import Path
 
+import numpy as np
 
-def parse_sorting_criteria(criterium):
-    if criterium == "lift":
-        return 3
-    elif criterium == "allconf":
-        return 4
-    elif criterium == "coherence":
-        return 5
-    elif criterium == "cosine":
-        return 6
-    elif criterium == "kulc":
-        return 7
-    elif criterium == "maxconf":
-        return 8
-    else:
-        raise ValueError(f"The provided sorting criterium '{criterium}' does not exist.")
+
+def restore_headers(rule, headers):
+    return headers[rule[0]], [headers[item] for item in rule[1]], *rule[2:]
 
 
 def main(args):
-    columns = np.load(args.columns,
-                      allow_pickle=True)
+    rules_npz = np.load(args.rules, allow_pickle=True)
+    rules = rules_npz['arr_0']
+    with open(Path(args.rules.parent, "headers.pickle"), "rb") as fp:
+        headers = pickle.load(fp)
+    inv_headers = {v: k for k, v in headers.items()}
 
-    with open(args.rules, "rb") as fp:
-        rules = pickle.load(fp)
+    #  a list of rules (i.e. tuples with two or more elements), each consisting of
 
-    join_urls = lambda urls: "\n".join(columns[i] for i in urls)
-    criterium = parse_sorting_criteria(args.sort_by)
-    for lhs, rhs, conf, lift, ac, coh, cos, kulc, mc in sorted(rules, key=lambda info: info[criterium]):
-        print("---------------------------------------------------------")
-        left = join_urls(lhs)
-        right = join_urls(rhs)
-
-        msg = f"{left}\n\n=>\n\n{right}\n\nwith\n"
-        msg += f"\tConfidence: {conf}\n"
-        msg += f"\tLift: {lift}\n"
-        msg += f"\tAllConf: {ac}\n"
-        msg += f"\tCoherence: {coh}\n"
-        msg += f"\tCosine: {cos}\n"
-        msg += f"\tKulc: {kulc}\n"
-        msg += f"\tMaxConf: {mc}\n"
-
-        print(msg + "---------------------------------------------------------")
+    #  - a head/consequent item, a tuple with
+    #  - a body/antecedent item set
+    #  - the values selected by the parameter 'report', which may be combined into a
+    #    tuple or a list if report[0] is '(' or '[', respectively.
+    mapped_rules = np.array(list(map(lambda r: restore_headers(r, inv_headers), rules)))
+    np.savetxt(Path(args.rules.parent, "rules.txt"), mapped_rules, fmt='%s')
+    sys.exit(0)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-c", "--columns", type=Path, required=True,
-                        help="Path to the transaction's database in .npy format.")
     parser.add_argument("-r", "--rules", type=Path, required=True,
                         help="Path to the generated rules .pickle serialization.")
-    parser.add_argument("-s", "--sort-by", type=str, required=True, default="lift",
-                        help=".",
-                        choices={"allconf",
-                                 "coherence",
-                                 "cosine",
-                                 "kulc",
-                                 "maxconf",
-                                 "lift"})
 
     args = parser.parse_args()
 

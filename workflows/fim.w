@@ -53,21 +53,16 @@ process run-fim (with state-dir)
   # bash {
     python bin/run_fim.py -t {{inputs:tweetskb-dir}} -i {{inputs:tweets}} -u {{inputs:uby-dir}} -d {{inputs:rel}} -o {{outputs:fim-out}}
 
-    python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s cosine > {{outputs:fim-out}}/rules_cosine.txt
-    python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s maxconf > {{outputs:fim-out}}/rules_maxconf.txt
-    python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s lift > {{outputs:fim-out}}/rules_lift.txt
-    python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s kulc > {{outputs:fim-out}}/rules_kulc.txt
-    python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s allconf > {{outputs:fim-out}}/rules_allconf.txt
-    python bin/print_rules.py -c {{outputs:fim-out}}/columns.npy -r {{outputs:fim-out}}/rules.pickle -s coherence > {{outputs:fim-out}}/rules_coherence.txt
+    python bin/print_rules.py -r {{outputs:fim-out}}/rules.npz
 
   }
 
 process run-show-graph (with state-dir)
-  packages "raptor2" "graphviz" "sed" "parallel" "coreutils"
+  packages "raptor2" "graphviz" "sed" "parallel" "coreutils" "findutils"
   inputs
     . fim-out: : string-append state-dir "/fim"
   # bash {
-    parallel "bin/show_graph.sh {} turtle" ::: {{inputs:fim-out}}/graphs/*.ttl
+    find {{inputs:fim-out}} -type f -name "*.ttl" | parallel "bin/show_graph.sh {} turtle"
   }
 
 workflow frequent-itemset-mining

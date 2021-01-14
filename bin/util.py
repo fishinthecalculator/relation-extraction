@@ -1,3 +1,4 @@
+import itertools
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
@@ -17,11 +18,20 @@ def make_parser(dataset):
 
 def process_stdin_or_file(args, func):
     if args.stdin:
-        func(sys.stdin)
+        return func(sys.stdin)
     else:
         if args.tweet_ids.is_dir():
             ids = Path(args.tweet_ids, "ids.tsv")
         else:
             ids = args.tweet_ids
         with open(ids) as fp:
-            func(fp.readlines())
+            return func(fp)
+
+
+def is_empty(iterable):
+    try:
+        next(iterable)
+    except StopIteration:
+        return True
+    # return itertools.chain([first], iterable)
+    return False

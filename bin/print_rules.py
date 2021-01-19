@@ -13,7 +13,7 @@ def restore_headers(rule, headers):
 
 def main(args):
     rules_npz = np.load(args.rules, allow_pickle=True)
-    rules = rules_npz['arr_0']
+    rules = rules_npz['rules']
     with open(Path(args.rules.parent, "headers.pickle"), "rb") as fp:
         headers = pickle.load(fp)
     inv_headers = {v: k for k, v in headers.items()}

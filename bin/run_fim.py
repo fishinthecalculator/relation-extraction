@@ -71,7 +71,11 @@ def merge_graphs(tweet_id, func):
     tweet_graph = Graph()
 
     # Merge tweet graphs.
-    datasets = [UBY_NEIGHBORS, DBPEDIA_NEIGHBORS, TWEETSKB_NEIGHBORS]
+    datasets = [UBY_NEIGHBORS,
+                # Dbpedia make results a little noisy, let's
+                # try and remove it
+                # DBPEDIA_NEIGHBORS,
+                TWEETSKB_NEIGHBORS]
     for d in datasets:
         triples = Path(d, f"{tweet_id}.ttl")
         if triples.is_file():

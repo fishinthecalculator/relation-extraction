@@ -29,8 +29,14 @@ def is_visited(session, tweet_id):
 
 def chunks(session, lst, n):
     """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield list(int(t.strip()) for t in lst[i:i + n] if not is_visited(session, t))
+    chunk = []
+    for i, t in enumerate(lst):
+        if len(chunk) == n:
+            yield chunk
+            chunk = []
+        elif not is_visited(session, t):
+            chunk.append(int(t.strip()))
+    yield chunk
 
 
 def lookup_tweets(chunk, api, attempt=0):
@@ -71,6 +77,7 @@ def main(args):
     engine, session = setup_db(args.out_dir)
 
     def scrape(tweets):
+
         processed = 0
         total = 0
         try:

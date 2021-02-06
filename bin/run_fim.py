@@ -72,9 +72,7 @@ def merge_graphs(tweet_id, func):
 
     # Merge tweet graphs.
     datasets = [UBY_NEIGHBORS,
-                # Dbpedia make results a little noisy, let's
-                # try and remove it
-                # DBPEDIA_NEIGHBORS,
+                DBPEDIA_NEIGHBORS,
                 TWEETSKB_NEIGHBORS]
     for d in datasets:
         triples = Path(d, f"{tweet_id}.ttl")
@@ -140,12 +138,15 @@ def main(args):
                              # 1e-3 -> 15G and counting..
                              supp=5e-3,
                              zmin=2,
+                             conf=60,  # minimum confidence of an assoc. rule
                              # C: rule confidence as a percentage
                              # a: absolute item set support (number of transactions)
                              # b: absolute body set support (number of transactions)
                              report='Cab',
                              #  eval: measure for item set evaluation
-                             eval='k',  # conditional probability ratio
+                             # q: difference of lift quotient to 1
+                             # r: difference of conviction quotient to 1
+                             eval='r',
                              thresh=5)  # for evaluation measure
         # dtype=np.uint)
         print(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")

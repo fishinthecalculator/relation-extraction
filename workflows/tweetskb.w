@@ -1,14 +1,14 @@
 define default-state-dir
-  string-append
+  file
     getcwd
-    . "/results"
+    . / "results"
 
 process tweetskb-feature-extraction (with state-dir)
   packages "python-wrapper" "python-rdflib"
   inputs
     . tweetskb: "inputs/tweetskb"
-    . tweets: : string-append state-dir "/tweets"
-  outputs tweetskb-dir: : string-append state-dir "/tweetskb"
+    . tweets: : file state-dir / "tweets"
+  outputs tweetskb-dir: : file state-dir / "tweetskb"
   # bash {
     python bin/fe_tweetskb.py -t {{inputs:tweetskb}} -i {{inputs:tweets}} -o {{outputs:tweetskb-dir}}
   }

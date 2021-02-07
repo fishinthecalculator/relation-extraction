@@ -1,16 +1,16 @@
 define default-state-dir
-  string-append
+  file
     getcwd
-    . "/results"
+    . / "results"
 
 process uby-feature-extraction (with state-dir)
   packages "python-wrapper" "python-rdflib"
   inputs
     . split: "inputs/split"
-    . entities: : string-append state-dir "/entities"
-    . tweets: : string-append state-dir "/tweets"
+    . entities: : file state-dir / "entities"
+    . tweets: : file state-dir / "tweets"
     . vn: "inputs/uby"
-  outputs uby-dir: : string-append state-dir "/uby-neighbors"
+  outputs uby-dir: : file state-dir / "uby-neighbors"
   # bash {
     python bin/fe_uby.py -t {{inputs:entities}} -i {{inputs:tweets}} -f {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-dir}}
   }

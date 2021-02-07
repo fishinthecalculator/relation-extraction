@@ -1,15 +1,14 @@
 define default-state-dir
-  string-append
+  file
     getcwd
-    . "/results"
+    . / "results"
 
 process select-tweets-entities (with state-dir)
   packages "sed" "ripgrep" "parallel" "coreutils"
   inputs tweetskb: "inputs/tweetskb"
   outputs
-    . entities: : string-append state-dir "/entities"
-    . tweets: : string-append state-dir "/tweets"
-
+    . entities: : file state-dir / "entities"
+    . tweets: : file state-dir / "tweets"
   # bash {
     bin/select_tweets_entities.sh {{inputs:tweetskb}} {{state-dir}}
   }

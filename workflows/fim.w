@@ -49,7 +49,7 @@ process run-fim (with state-dir)
     . tweets: : string-append state-dir "/tweets"
     . tweetskb-dir: : string-append state-dir "/tweetskb"
   outputs
-    . fim-out: : string-append state-dir "/fim"
+    . fim-out: : file state-dir / "fim"
   # bash {
     python bin/run_fim.py -t {{inputs:tweetskb-dir}} -i {{inputs:tweets}} -u {{inputs:uby-dir}} -d {{inputs:rel}} -o {{outputs:fim-out}}
 

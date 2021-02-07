@@ -80,6 +80,7 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
      "graphviz"
      "guile"
      "guile-config"
+     "guile-rdf"
      "guile-sparql"
      "guix"
      "gwl"

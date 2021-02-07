@@ -6,9 +6,9 @@ import
   guix utils
 
 define default-state-dir
-  string-append
+  file
     getcwd
-    . "/results"
+    . / "results"
 
 define python-pyfim
   package
@@ -41,26 +41,40 @@ Finally, there is a function @code{arules} for generating association rules (sim
 to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to generate association rules."
     license expat
 
-process run-fim (with state-dir)
-  packages "python-wrapper" "python-rdflib" "python-numpy" python-pyfim
+process merge-feature-graphs (with state-dir)
+  packages "guile" "guile-config" "guile-rdf" "guix"
   inputs
-    . uby-dir: : string-append state-dir "/uby-neighbors"
-    . rel: : string-append state-dir "/related"
-    . tweets: : string-append state-dir "/tweets"
-    . tweetskb-dir: : string-append state-dir "/tweetskb"
+    . tweets: : file state-dir / "tweets"
+    . uby-dir: : file state-dir / "uby-neighbors"
+    . rel: : file state-dir / "related"
+    . tweetskb-dir: : file state-dir / "tweetskb"
+  values:
+    . ids:
+    file
+      first inputs
+      . / "ids.tsv"
+  outputs
+    . graphs: : file state-dir / "graphs"
+  # bash {
+    guile -e main -s bin/merge-graphs -t {{inputs:tweetskb-dir}} -i {{values:ids}} -u {{inputs:uby-dir}} -d {{inputs:rel}} -o {{outputs:graphs}}
+  }
+
+process run-fim (with state-dir)
+  packages "python-wrapper" "python-numpy" python-pyfim
+  inputs
+    . graphs: : file state-dir / "graphs"
   outputs
     . fim-out: : file state-dir / "fim"
   # bash {
-    python bin/run_fim.py -t {{inputs:tweetskb-dir}} -i {{inputs:tweets}} -u {{inputs:uby-dir}} -d {{inputs:rel}} -o {{outputs:fim-out}}
+    python bin/run_fim.py -i {{inputs:tweets}} -g {{inputs:graphs}} -o {{outputs:fim-out}}
 
     python bin/print_rules.py -r {{outputs:fim-out}}/rules.npz
-
   }
 
 process run-show-graph (with state-dir)
   packages "raptor2" "graphviz" "sed" "parallel" "coreutils" "findutils"
   inputs
-    . fim-out: : string-append state-dir "/fim"
+    . graphs: : file state-dir / "fim"
   # bash {
     find {{inputs:fim-out}} -type f -name "*.ttl" | parallel "bin/show_graph.sh {} turtle"
   }
@@ -68,5 +82,6 @@ process run-show-graph (with state-dir)
 workflow frequent-itemset-mining
   processes
     auto-connect
+      merge-graphs default-state-dir
       run-fim default-state-dir
       run-show-graph default-state-dir

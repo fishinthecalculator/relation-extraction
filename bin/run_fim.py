@@ -9,29 +9,18 @@ from pathlib import Path
 
 import fim
 import numpy as np
-from rdflib import Graph
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from util import make_parser, process_stdin_or_file, is_empty
+from util import make_parser, process_stdin_or_file
 from kb.graph import load
 from kb.prefix import NEE, LEMON
 
-PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis")
-
-TWEET_EXTRACTION = Path("PROJECT_ROOT", "tweet-extraction")
-TWEETS = Path(TWEET_EXTRACTION, "first_10M_lines.n3")
-TWEETS_WITH_RELATIONS = Path(TWEET_EXTRACTION, "related")
+PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis", "results")
 
 FIM = Path(PROJECT_ROOT, "fim")
-GRAPHS = Path(FIM, "generated")
-
-UBY_DIR = Path(PROJECT_ROOT, "UBY")
-UBY_NEIGHBORS = Path(UBY_DIR, "uby-neighbors")
-
-DBPEDIA_NEIGHBORS = Path(PROJECT_ROOT, "results", "related")
-TWEETSKB_NEIGHBORS = Path(PROJECT_ROOT, "results", "entities")
+GRAPHS = Path(PROJECT_ROOT, "graphs")
 
 # Support(B) = (Transactions containing (B))/(Total Transactions)
 #
@@ -67,31 +56,16 @@ def bag_of_triples(tweet_graph):
     return [triple for triple in tweet_graph.triples((None, None, None))]
 
 
-def merge_graphs(tweet_id, func):
-    tweet_graph = Graph()
-
-    # Merge tweet graphs.
-    datasets = [UBY_NEIGHBORS,
-                DBPEDIA_NEIGHBORS,
-                TWEETSKB_NEIGHBORS]
-    for d in datasets:
-        triples = Path(d, f"{tweet_id}.ttl")
-        if triples.is_file():
-            tweet_graph = load(triples, fmt="turtle")
-
-    if not is_empty(tweet_graph.triples((None, None, None))):
-        tweet_graph.serialize(destination=str(
-            Path(GRAPHS, f"{tweet_id}.ttl")), encoding="utf-8", format="turtle")
-
-    return func(tweet_graph)
-
-
 def make_bags(lines, func, bags_path):
     print("Computing bags of items...")
     start = time.time()
     headers_pickle_path = Path(bags_path.parent, "headers.pickle")
 
-    bags = [merge_graphs(line.strip(), func) for line in lines]
+    bags = [bag
+            for bag in (func(load(Path(GRAPHS, f"{line.strip()}.ttl"), fmt="nt"))
+                        for line in lines)
+            if len(bag) > 0]
+    
     # Make a map of unique strings to natural numbers.
     headers = dict([(y, x + 1)
                     for x, y in enumerate(sorted(set(string
@@ -156,21 +130,13 @@ def main(args):
 
 if __name__ == "__main__":
     parser = make_parser("FIM")
-    parser.add_argument("-t", "--tweetskb", type=Path, required=True,
-                        help="Path of the TweetsKB graphs representing the tweets.")
-    parser.add_argument("-d", "--dbpedia", type=Path, required=True,
-                        help="Path of the Dbpedia graphs representing the entities.")
-    parser.add_argument("-u", "--uby", type=Path, required=True,
-                        help="Path of the graphs of the neighbors of all the tokens in a tweet.")
+    parser.add_argument("-g", "--graphs-dir", type=Path, required=True,
+                        help="Path to the merged graphs representing the tweets.")
 
     args = parser.parse_args()
 
     FIM = args.out_dir
-    GRAPHS = Path(FIM, "graphs")
-
-    UBY_NEIGHBORS = args.uby
-    DBPEDIA_NEIGHBORS = args.dbpedia
-    TWEETSKB_NEIGHBORS = args.tweetskb
+    GRAPHS = args.graphs_dir
 
     print(f"Output will be generated at {FIM}")
 

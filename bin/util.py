@@ -26,12 +26,3 @@ def process_stdin_or_file(args, func):
             ids = args.tweet_ids
         with open(ids) as fp:
             return func(fp)
-
-
-def is_empty(iterable):
-    try:
-        next(iterable)
-    except StopIteration:
-        return True
-    # return itertools.chain([first], iterable)
-    return False

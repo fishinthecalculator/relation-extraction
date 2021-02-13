@@ -13,6 +13,9 @@ define tweetskb-workflow
 define fim-workflow
   load-workflow "workflows/fim.w"
 
+define utils
+  load-workflow "workflows/utils.w"
+
 workflow main
   processes
     apply
@@ -23,3 +26,4 @@ workflow main
         workflow-processes tweet-ids-workflow
         workflow-processes tweetskb-workflow
         workflow-processes fim-workflow
+        workflow-processes utils

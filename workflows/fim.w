@@ -1,7 +1,9 @@
 import
+  gnu packages guile-xyz
   guix packages
   guix licenses
   guix download
+  guix git-download
   guix build-system python
   guix utils
 
@@ -42,46 +44,31 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
     license expat
 
 process merge-feature-graphs (with state-dir)
-  packages "guile" "guile-config" "guile-rdf" "guix"
+  packages "coreutils" "python-wrapper" "python-rdflib" "parallel"
   inputs
     . tweets: : file state-dir / "tweets"
     . uby-dir: : file state-dir / "uby-neighbors"
     . rel: : file state-dir / "related"
     . tweetskb-dir: : file state-dir / "tweetskb"
-  values:
-    . ids:
-    file
-      first inputs
-      . / "ids.tsv"
   outputs
     . graphs: : file state-dir / "graphs"
   # bash {
-    guile -e main -s bin/merge-graphs -t {{inputs:tweetskb-dir}} -i {{values:ids}} -u {{inputs:uby-dir}} -d {{inputs:rel}} -o {{outputs:graphs}}
+    cat {{inputs:tweets}}/ids.tsv | parallel "python bin/merge_graphs.py -i {} -u {{inputs:uby-dir}} -d {{inputs:rel}} -t {{inputs:tweetskb-dir}} -o {{outputs:graphs}}"
   }
 
 process run-fim (with state-dir)
-  packages "python-wrapper" "python-numpy" python-pyfim
+  packages "python-wrapper" "python-numpy" "python-rdflib" python-pyfim
   inputs
+    . tweets: : file state-dir / "tweets"
     . graphs: : file state-dir / "graphs"
   outputs
     . fim-out: : file state-dir / "fim"
   # bash {
     python bin/run_fim.py -i {{inputs:tweets}} -g {{inputs:graphs}} -o {{outputs:fim-out}}
-
-    python bin/print_rules.py -r {{outputs:fim-out}}/rules.npz
-  }
-
-process run-show-graph (with state-dir)
-  packages "raptor2" "graphviz" "sed" "parallel" "coreutils" "findutils"
-  inputs
-    . graphs: : file state-dir / "fim"
-  # bash {
-    find {{inputs:fim-out}} -type f -name "*.ttl" | parallel "bin/show_graph.sh {} turtle"
   }
 
 workflow frequent-itemset-mining
   processes
     auto-connect
-      merge-graphs default-state-dir
+      merge-feature-graphs default-state-dir
       run-fim default-state-dir
-      run-show-graph default-state-dir

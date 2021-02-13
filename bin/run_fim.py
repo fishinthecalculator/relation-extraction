@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import concurrent.futures
 import os
 import pickle
 import sys
@@ -56,16 +57,25 @@ def bag_of_triples(tweet_graph):
     return [triple for triple in tweet_graph.triples((None, None, None))]
 
 
+def load_one(line, func):
+    return func(load(Path(GRAPHS, f"{line.strip()}.ttl"), fmt="ttl"))
+
+
+def load_parallel(lines, func):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(load_one, l, func) for l in lines]
+        return [fut.result() for fut in futures]
+
+
 def make_bags(lines, func, bags_path):
     print("Computing bags of items...")
     start = time.time()
     headers_pickle_path = Path(bags_path.parent, "headers.pickle")
 
     bags = [bag
-            for bag in (func(load(Path(GRAPHS, f"{line.strip()}.ttl"), fmt="nt"))
-                        for line in lines)
+            for bag in load_parallel(lines, func)
             if len(bag) > 0]
-    
+
     # Make a map of unique strings to natural numbers.
     headers = dict([(y, x + 1)
                     for x, y in enumerate(sorted(set(string

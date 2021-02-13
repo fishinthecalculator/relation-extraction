@@ -19,6 +19,6 @@ all_prefixes = [("rdf", RDF),
                 ("dbo", DBO),
                 ("schema", SCHEMA),
                 ("wna", WNA),
-                ("SIOC_T", SIOC_T),
+                ("sioc_t", SIOC_T),
                 ("onyx", ONYX),
                 ("sioc", SIOC)]

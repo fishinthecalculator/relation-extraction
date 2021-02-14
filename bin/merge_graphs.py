@@ -7,6 +7,8 @@ from rdflib import Graph
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
+from relext.util import make_logger
+logger = make_logger("merge_graphs")
 from relext.kb.graph import load
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis")
@@ -37,7 +39,7 @@ def merge_graphs(tweet_id):
         if triples.is_file():
             tweet_graph = load(triples, fmt="turtle")
         else:
-            print(f"{triples} is not a file!")
+            logger.debug(f"{triples} is not a file!")
 
     if not is_empty(tweet_graph.triples((None, None, None))):
         tweet_graph.serialize(destination=str(
@@ -70,6 +72,6 @@ if __name__ == "__main__":
     DBPEDIA_NEIGHBORS = args.dbpedia
     TWEETSKB_NEIGHBORS = args.tweetskb
 
-    print(f"Output will be generated at {GRAPHS}/{args.id}.ttl")
+    logger.debug(f"Output will be generated at {GRAPHS}/{args.id}.ttl")
 
     main(args)

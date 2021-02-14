@@ -1,4 +1,7 @@
+import logging.config
+import os
 import sys
+import json
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -21,6 +24,13 @@ def make_parser(dataset):
                         help=f"Directory where the feature graphs from {dataset} "
                              "will be exported.")
     return parser
+
+
+def make_logger(name):
+    with open(Path(Path(__file__).parent, "logging.json")) as fp:
+        dict_conf = json.load(fp)
+    logging.config.dictConfig(dict_conf)
+    return logging.getLogger(name)
 
 
 def augment_parser(source, parser):

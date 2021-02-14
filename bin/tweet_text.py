@@ -7,10 +7,12 @@ import tweepy
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from relext.util import make_parser, process_stdin_or_file
+from relext.util import make_parser, make_logger, process_stdin_or_file
 from relext.tweet.db import setup_db, tear_down
 from relext.tweet.model import Tweet
 from relext.tweet.twitter import consumer_key, consumer_secret, access_token, access_token_secret
+
+logger = make_logger("tweet_text")
 
 
 def is_visited(session, tweet_id):
@@ -45,10 +47,10 @@ def lookup_tweets(chunk, api, attempt=0):
             return api.statuses_lookup(id_=chunk, tweet_mode="extended")
         except tweepy.TweepError:
             time.sleep(1)
-            print(f"Something went wrong, retrying. Attempt {attempt + 1}...")
+            logger.warning(f"Something went wrong, retrying. Attempt {attempt + 1}...")
             lookup_tweets(chunk, api, attempt + 1)
     else:
-        print('Something went wrong, quitting...')
+        logger.error('Something went wrong, quitting...')
         return []
 
 
@@ -86,7 +88,9 @@ def main(args):
                     break
                 elif len(chunk) == 0:
                     continue
-                print(f"Trying to scrape {len(chunk)} tweets\n{total} where already tried\n{processed} where stored")
+                logger.info(f"Trying to scrape {len(chunk)} tweets")
+                logger.info(f"{total} where already tried")
+                logger.info(f"{processed} where stored")
                 results = lookup_tweets(chunk, api)
                 if results:
                     for tweet in results:
@@ -95,7 +99,7 @@ def main(args):
                             done = store(session, tweet._json)
                             processed += done
         except KeyboardInterrupt:
-            print("Catched keyboard interrupt, safely shutting down...")
+            logger.info("Catched keyboard interrupt, safely shutting down...")
 
     process_stdin_or_file(args, scrape)
     tear_down(session)

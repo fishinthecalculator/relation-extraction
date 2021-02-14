@@ -14,7 +14,9 @@ import numpy as np
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from relext.util import make_parser, process_stdin_or_file
+from relext.util import make_parser, make_logger, process_stdin_or_file
+
+logger = make_logger("run_fim")
 from relext.kb.graph import load
 from relext.kb.prefix import NEE, LEMON
 
@@ -68,7 +70,7 @@ def load_parallel(lines, func):
 
 
 def make_bags(lines, func, bags_path):
-    print("Computing bags of items...")
+    logger.info("Computing bags of items...")
     start = time.time()
     headers_pickle_path = Path(bags_path.parent, "headers.pickle")
 
@@ -95,7 +97,7 @@ def make_bags(lines, func, bags_path):
     with open(bags_path, "wb") as fp:
         pickle.dump(bags, fp)
 
-    print(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")
+    logger.info(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")
 
     return bags
 
@@ -111,7 +113,7 @@ def main(args):
             bags = pickle.load(fp)
 
     if not rules_pickle_path.is_file():
-        print("Computing association rules...")
+        logger.info("Computing association rules...")
         start = time.time()
         rules = fim.fpgrowth(bags,
                              target='r',  # Generate association rules
@@ -132,8 +134,7 @@ def main(args):
                              # r: difference of conviction quotient to 1
                              eval='r',
                              thresh=5)  # for evaluation measure
-        # dtype=np.uint)
-        print(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")
+        logger.info(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")
         np.savez_compressed(rules_pickle_path, rules=rules)
     sys.exit(0)
 
@@ -148,6 +149,6 @@ if __name__ == "__main__":
     FIM = args.out_dir
     GRAPHS = args.graphs_dir
 
-    print(f"Output will be generated at {FIM}")
+    logger.info(f"Output will be generated at {FIM}")
 
     main(args)

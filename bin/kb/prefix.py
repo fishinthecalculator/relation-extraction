@@ -9,6 +9,7 @@ ONYX = Namespace("http://www.gsi.dit.upm.es/ontologies/onyx/ns#")
 WNA = Namespace("http://www.gsi.dit.upm.es/ontologies/wnaffect/ns#")
 LEMON = Namespace("http://www.monnet-project.eu/lemon#")
 DBO = Namespace("http://dbpedia.org/ontology/")
+DBR = Namespace("http://dbpedia.org/resource/")
 
 all_prefixes = [("rdf", RDF),
                 ("rdfs", RDFS),
@@ -17,6 +18,7 @@ all_prefixes = [("rdf", RDF),
                 ("lemon", LEMON),
                 ("nee", NEE),
                 ("dbo", DBO),
+                ("dbr", DBR),
                 ("schema", SCHEMA),
                 ("wna", WNA),
                 ("sioc_t", SIOC_T),

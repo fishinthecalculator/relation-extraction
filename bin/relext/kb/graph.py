@@ -21,11 +21,16 @@ def sub_obj_dfs(g, node, current_level=0, max_level=10, visited=defaultdict(bool
                                        visited=visited)
 
 
-def load(path, fmt="turtle"):
-    path = str(path)
+def make_graph():
     graph = Graph()
     for prefix in all_prefixes:
         graph.bind(*prefix)
+    return graph
+
+
+def load(path, fmt="turtle"):
+    path = str(path)
+    graph = make_graph()
     logger.debug("Loading " + path + "...")
     start = time.time()
     graph.parse(location=path, format=fmt)

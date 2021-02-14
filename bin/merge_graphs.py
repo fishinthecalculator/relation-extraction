@@ -2,14 +2,14 @@ from argparse import ArgumentParser
 import os
 import sys
 from pathlib import Path
-from rdflib import Graph
+
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
 from relext.util import make_logger
 logger = make_logger("merge_graphs")
-from relext.kb.graph import load
+from relext.kb.graph import load, make_graph
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis")
 GRAPHS = Path(PROJECT_ROOT, "results", "graphs")
@@ -28,7 +28,7 @@ def is_empty(iterable):
 
 
 def merge_graphs(tweet_id):
-    tweet_graph = Graph()
+    tweet_graph = make_graph()
 
     # Merge tweet graphs.
     datasets = [UBY_NEIGHBORS,

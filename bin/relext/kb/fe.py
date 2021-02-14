@@ -6,7 +6,7 @@ from pathlib import Path
 from rdflib import Graph, Literal, URIRef
 from rdflib.util import guess_format
 
-from .graph import load, sub_obj_dfs
+from .graph import load, make_graph, sub_obj_dfs
 from .prefix import NEE, SIOC, SCHEMA, LEMON
 
 
@@ -31,7 +31,7 @@ class FeatureExtractor(ABC):
         self.data_path = data_path
         self.out_path = out_path
         self.data_is_loaded = False
-        self.g = Graph()
+        self.g = make_graph()
 
         if not fmt:
             self.fmt = guess_format(str(self.data_path))
@@ -90,7 +90,7 @@ class DbpediaFE(FeatureExtractor):
         return uris
 
     def _extract(self, tweet_id):
-        graph = Graph()
+        graph = make_graph()
         graph_path = Path(self.tweets_path, f"{tweet_id}.ttl")
         if graph_path.is_file():
             uris = DbpediaFE.get_uris(graph_path)
@@ -129,7 +129,7 @@ class UbyFE(FeatureExtractor):
         return tokens
 
     def _extract(self, tweet_id):
-        graph = Graph()
+        graph = make_graph()
         graph_path = Path(self.entities_path, f"{tweet_id}.ttl")
         if graph_path.is_file():
             words = (splitted
@@ -158,8 +158,9 @@ class TweetsKbFE(FeatureExtractor):
         super().__init__(data_path, out_path, fmt=fmt)
 
     def _extract(self, tweet_id):
-        tweet_graph = Graph()
+        tweet_graph = make_graph()
         for post in self.g.subjects(SIOC.id, Literal(tweet_id)):
+            tweet_graph.add((post, SIOC.id, Literal(tweet_id)))
             for entity in self.g.objects(post, SCHEMA.mentions):
                 # Detected entity Dbpedia URI.
                 for uri in self.g.objects(entity, NEE.hasMatchedURI):

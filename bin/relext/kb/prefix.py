@@ -1,6 +1,7 @@
 from rdflib import Namespace
 from rdflib.namespace import RDF, RDFS, XSD, DC
 
+DCTERMS = Namespace("http://purl.org/dc/terms/")
 NEE = Namespace("http://www.ics.forth.gr/isl/oae/core#")
 SCHEMA = Namespace("http://schema.org/")
 SIOC = Namespace("http://rdfs.org/sioc/ns#")
@@ -15,6 +16,7 @@ all_prefixes = [("rdf", RDF),
                 ("rdfs", RDFS),
                 ("xsd", XSD),
                 ("dc", DC),
+                ("dcterms", DCTERMS),
                 ("lemon", LEMON),
                 ("nee", NEE),
                 ("dbo", DBO),

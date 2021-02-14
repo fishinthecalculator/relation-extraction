@@ -4,10 +4,11 @@ import sys
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from relext.util import make_parser, process_stdin_or_file, augment_parser, make_extractor
+from relext.util import make_parser, make_logger, process_stdin_or_file, augment_parser, make_extractor
 
 
 def main(args):
+    logger = make_logger("feature-extraction-" + args.source)
     fe = make_extractor[args.source](args)
     fe.load_data()
 

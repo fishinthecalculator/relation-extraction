@@ -75,7 +75,11 @@ def bag_of_triples(tweet_graph):
 
 
 def load_one(line):
-    return load(Path(GRAPHS, f"{line.strip()}.ttl"), fmt="ttl")
+    tweet_path = Path(GRAPHS, f"{line.strip()}.ttl")
+    if tweet_path.is_file():
+        return load(tweet_path, fmt="ttl")
+    else:
+        logger.debug(f"{tweet_path} doesn't exist.")
 
 
 def load_parallel(lines, func):

@@ -10,7 +10,7 @@ process tweetskb-feature-extraction (with state-dir)
     . tweets: : file state-dir / "tweets"
   outputs tweetskb-dir: : file state-dir / "tweetskb"
   # bash {
-    python bin/feature-extraction.py -s tweetskb -t {{inputs:tweetskb}} -i {{inputs:tweets}} -o {{outputs:tweetskb-dir}}
+    python bin/feature_extraction.py -s tweetskb -t {{inputs:tweetskb}} -i {{inputs:tweets}} -o {{outputs:tweetskb-dir}}
   }
 
 workflow tweetskb

@@ -5,11 +5,10 @@ from collections import defaultdict
 
 from rdflib import Graph
 
-from rdflib.namespace import NamespaceManager
-
 from .prefix import all_prefixes
 
 logger = logging.getLogger(__name__)
+
 
 def sub_obj_dfs(g, node, current_level=0, max_level=10, visited=defaultdict(bool)):
     for t in g.triples((node, None, None)):

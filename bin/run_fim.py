@@ -18,7 +18,7 @@ from relext.util import make_parser, make_logger, process_stdin_or_file
 
 logger = make_logger("run_fim")
 from relext.kb.graph import load
-from relext.kb.prefix import NEE, LEMON
+from relext.kb.prefix import NEE, LEMON, SIOC
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis", "results")
 
@@ -37,7 +37,11 @@ GRAPHS = Path(PROJECT_ROOT, "graphs")
 #
 # Lift(A→B) = (Confidence (A→B))/(Support (B))
 
-uninteresting = {LEMON.writtenRep, LEMON.canonicalForm, NEE.hasMatchedURI, NEE.detectedAs}
+uninteresting = {LEMON.writtenRep,
+                 LEMON.canonicalForm,
+                 NEE.hasMatchedURI,
+                 NEE.detectedAs,
+                 SIOC.id}
 
 
 def bag_of_terms(tweet_graph):
@@ -67,10 +71,11 @@ def bag_of_triples(tweet_graph):
     # bag.append(f"X_{triple[1]}_{triple[2]}")
     bag = []
     for triple in tweet_graph.triples((None, None, None)):
-        triple = list(map(to_n3, triple))
-        bag.extend([f"{triple[0]}_{triple[1]}_{triple[2]}",
-                    f"{triple[0]}_{triple[1]}_X",
-                    f"X_{triple[1]}_{triple[2]}"])
+        if triple[1] not in uninteresting:
+            triple = list(map(to_n3, triple))
+            bag.extend([f"{triple[0]}_{triple[1]}_{triple[2]}",
+                        f"{triple[0]}_{triple[1]}_X",
+                        f"X_{triple[1]}_{triple[2]}"])
     return bag
 
 

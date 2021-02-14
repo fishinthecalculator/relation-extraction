@@ -56,11 +56,22 @@ def bag_of_terms(tweet_graph):
 
 
 def bag_of_triples(tweet_graph):
-    return [triple for triple in tweet_graph.triples((None, None, None))]
+    def to_n3(term):
+        return term.n3(tweet_graph.namespace_manager)
 
+    # BA :spouse :MA
+    # bag { :BA, :spouse, :MA, ?v0-:spouse-:MA, .... }
+    # the indices of the variable are progressive naturals
 
-def load_one(line, func):
-    return func(load(Path(GRAPHS, f"{line.strip()}.ttl"), fmt="ttl"))
+    # bag.append(f"{triple[0]}_{triple[1]}_X")
+    # bag.append(f"X_{triple[1]}_{triple[2]}")
+    bag = []
+    for triple in tweet_graph.triples((None, None, None)):
+        triple = list(map(to_n3, triple))
+        bag.extend([f"{triple[0]}_{triple[1]}_{triple[2]}",
+                    f"{triple[0]}_{triple[1]}_X",
+                    f"X_{triple[1]}_{triple[2]}"])
+    return bag
 
 
 def load_parallel(lines, func):
@@ -102,12 +113,20 @@ def make_bags(lines, func, bags_path):
     return bags
 
 
+bag_functions = {
+    "term": bag_of_terms,
+    "triples": bag_of_triples
+}
+
+
 def main(args):
     rules_pickle_path = Path(FIM, "rules.npz")
     mapped_bags_pickle_path = Path(FIM, "mapped-bags.pickle")
 
     if not mapped_bags_pickle_path.is_file():
-        bags = process_stdin_or_file(args, lambda l: make_bags(l, bag_of_terms, mapped_bags_pickle_path))
+        bags = process_stdin_or_file(args, lambda l: make_bags(l,
+                                                               bag_functions[args.bag_type],
+                                                               mapped_bags_pickle_path))
     else:
         with open(mapped_bags_pickle_path, "rb") as fp:
             bags = pickle.load(fp)
@@ -143,6 +162,10 @@ if __name__ == "__main__":
     parser = make_parser("FIM")
     parser.add_argument("-g", "--graphs-dir", type=Path, required=True,
                         help="Path to the merged graphs representing the tweets.")
+    parser.add_argument("-t", "--bag-type", type=str, default="triples",
+                        help="Type of the bags that'll be used as transactions in FIM. Possible types are:\n"
+                             "\t - terms"
+                             "\t - triples")
 
     args = parser.parse_args()
 

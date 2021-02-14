@@ -27,18 +27,30 @@ def cut(strings, field: int, sep="\t"):
 
 
 class FeatureExtractor(ABC):
-    def __init__(self, data_path: Path, out_path: Path):
+    def __init__(self, data_path: Path, out_path: Path, split_token=" ", fmt=""):
         self.data_path = data_path
         self.out_path = out_path
         self.data_is_loaded = False
         self.g = Graph()
+
+        if not fmt:
+            self.fmt = guess_format(str(self.data_path))
+        else:
+            self.fmt = fmt
+
+        if isinstance(split_token, Path):
+            with open(split_token) as fp:
+                self.split_token = fp.read()
+        elif type(split_token) == str:
+            self.split_token = split_token
+        else:
+            raise TypeError("split_token should be either str or Path!")
+
         super().__init__()
 
-    def load_data(self, fmt=""):
+    def load_data(self):
         if not self.data_is_loaded:
-            if not fmt:
-                fmt = guess_format(str(self.data_path))
-            self.g = load(self.data_path, fmt)
+            self.g = load(self.data_path, self.fmt)
             self.data_is_loaded = True
 
     @abstractmethod
@@ -65,8 +77,8 @@ class FeatureExtractor(ABC):
 
 
 class DbpediaFE(FeatureExtractor):
-    def __init__(self, data_path: Path, out_path: Path, tweets_path: Path, max_level=3):
-        super().__init__(data_path, out_path)
+    def __init__(self, data_path: Path, out_path: Path, tweets_path: Path, max_level=3, fmt="nt"):
+        super().__init__(data_path, out_path, fmt=fmt)
         self.props = defaultdict(int)
         self.tweets_path = tweets_path
         self.max_level = max_level
@@ -105,10 +117,9 @@ class DbpediaFE(FeatureExtractor):
 
 
 class UbyFE(FeatureExtractor):
-    def __init__(self, data_path: Path, out_path: Path, entities_path: Path, split_token=" ", max_level=3):
-        super().__init__(data_path, out_path)
+    def __init__(self, data_path: Path, out_path: Path, entities_path: Path, split_token=" ", max_level=3, fmt="nt"):
+        super().__init__(data_path, out_path, split_token=split_token, fmt=fmt)
         self.entities_path = entities_path
-        self.split_token = split_token
         self.max_level = max_level
 
     @staticmethod
@@ -143,6 +154,9 @@ class UbyFE(FeatureExtractor):
 
 
 class TweetsKbFE(FeatureExtractor):
+    def __init__(self, data_path: Path, out_path: Path, fmt="n3"):
+        super().__init__(data_path, out_path, fmt=fmt)
+
     def _extract(self, tweet_id):
         tweet_graph = Graph()
         for post in self.g.subjects(SIOC.id, Literal(tweet_id)):

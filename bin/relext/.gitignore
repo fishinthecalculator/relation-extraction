@@ -8,4 +8,4 @@ tmp/
 build
 htmlcov
 
-relext/tweet/twitter.py
+logs/

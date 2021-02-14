@@ -7,10 +7,10 @@ import tweepy
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from util import make_parser, process_stdin_or_file
-from tweet.db import setup_db, tear_down
-from tweet.model import Tweet
-from tweet.twitter import consumer_key, consumer_secret, access_token, access_token_secret
+from relext.util import make_parser, process_stdin_or_file
+from relext.tweet.db import setup_db, tear_down
+from relext.tweet.model import Tweet
+from relext.tweet.twitter import consumer_key, consumer_secret, access_token, access_token_secret
 
 
 def is_visited(session, tweet_id):

@@ -12,7 +12,7 @@ process uby-feature-extraction (with state-dir)
     . vn: "inputs/uby"
   outputs uby-dir: : file state-dir / "uby-neighbors"
   # bash {
-    python bin/fe_uby.py -t {{inputs:entities}} -i {{inputs:tweets}} -f {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-dir}}
+    python bin/feature-extraction.py -s uby -t {{inputs:entities}} -i {{inputs:tweets}} -f {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-dir}}
   }
 
 workflow UBY

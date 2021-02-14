@@ -7,7 +7,7 @@ from rdflib import Graph
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from kb.graph import load
+from relext.kb.graph import load
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis")
 GRAPHS = Path(PROJECT_ROOT, "results", "graphs")

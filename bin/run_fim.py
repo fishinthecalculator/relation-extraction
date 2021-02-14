@@ -14,9 +14,9 @@ import numpy as np
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from util import make_parser, process_stdin_or_file
-from kb.graph import load
-from kb.prefix import NEE, LEMON
+from relext.util import make_parser, process_stdin_or_file
+from relext.kb.graph import load
+from relext.kb.prefix import NEE, LEMON
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis", "results")
 

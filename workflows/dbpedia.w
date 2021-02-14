@@ -12,7 +12,7 @@ process dbpedia-feature-extraction (with state-dir)
   outputs
     . rel: : file state-dir / "related"
   # bash {
-    python bin/fe_dbpedia.py -i {{inputs:tweets}} -t {{inputs:entities}} -d {{inputs:db}} -o {{outputs:rel}}
+    python bin/feature-extraction.py -s dbpedia -i {{inputs:tweets}} -t {{inputs:entities}} -d {{inputs:db}} -o {{outputs:rel}}
   }
 
 

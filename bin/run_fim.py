@@ -74,9 +74,14 @@ def bag_of_triples(tweet_graph):
     return bag
 
 
+def load_one(line):
+    return load(Path(GRAPHS, f"{line.strip()}.ttl"), fmt="ttl")
+
+
 def load_parallel(lines, func):
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(load_one, l, func) for l in lines]
+        futures = [executor.submit(lambda tweet: func(load_one(tweet)), l)
+                   for l in lines]
         return [fut.result() for fut in futures]
 
 

@@ -1,3 +1,4 @@
+import os
 import pickle
 import sys
 
@@ -6,12 +7,18 @@ from pathlib import Path
 
 import numpy as np
 
+this_dir = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.insert(0, this_dir)
+from relext.util import make_logger
+
 
 def restore_headers(rule, headers):
     return headers[rule[0]], [headers[item] for item in rule[1]], *rule[2:]
 
 
 def main(args):
+    logger = make_logger("print_rules")
     rules_npz = np.load(args.rules, allow_pickle=True)
     rules = rules_npz['rules']
     with open(Path(args.rules.parent, "headers.pickle"), "rb") as fp:

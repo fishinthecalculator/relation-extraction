@@ -18,7 +18,7 @@
       "level": "DEBUG",
       "formatter": "simple",
       "filename": "results/logs/relation-extraction.log",
-      "maxBytes": 524288000,
+      "maxBytes": 10485760,
       "backupCount": 50,
       "encoding": "utf8"
     }

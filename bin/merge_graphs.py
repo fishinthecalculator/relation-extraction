@@ -1,13 +1,13 @@
-from argparse import ArgumentParser
+import asyncio
 import os
 import sys
 from pathlib import Path
 
-
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from relext.util import make_logger
+from relext.util import make_logger, make_parser, process_stdin_or_file
+
 logger = make_logger("merge_graphs")
 from relext.kb.graph import load, make_graph
 
@@ -27,8 +27,9 @@ def is_empty(iterable):
     return False
 
 
-def merge_graphs(tweet_id):
+async def merge_graphs(tweet_id):
     tweet_graph = make_graph()
+    loop = asyncio.get_running_loop()
 
     # Merge tweet graphs.
     datasets = [UBY_NEIGHBORS,
@@ -37,26 +38,25 @@ def merge_graphs(tweet_id):
     for d in datasets:
         triples = Path(d, f"{tweet_id}.ttl")
         if triples.is_file():
-            tweet_graph = load(triples, fmt="turtle")
+            tweet_graph = await loop.run_in_executor(None, load, triples)
         else:
             logger.debug(f"{triples} is not a file!")
 
     if not is_empty(tweet_graph.triples((None, None, None))):
-        tweet_graph.serialize(destination=str(
-            Path(GRAPHS, f"{tweet_id}.ttl")), encoding="utf-8", format="ttl")
+        export = lambda i: tweet_graph.serialize(destination=str(Path(GRAPHS, f"{i}.ttl")),
+                                                 encoding="utf-8",
+                                                 format="ttl")
+        await loop.run_in_executor(None, export, tweet_id)
 
 
-def main(args):
-    merge_graphs(args.id)
-    sys.exit(0)
+async def main(args):
+    loop = asyncio.get_running_loop()
+    lines = await loop.run_in_executor(None, process_stdin_or_file, args)
+    await asyncio.gather(*(merge_graphs(l.strip()) for l in lines))
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("-i", "--id", type=str, required=True,
-                        help="Tweet ID.")
-    parser.add_argument("-o", "--out-dir", type=Path, required=True,
-                        help="Path to the directory where the graphs will be exported to.")
+    parser = make_parser("merge-graphs")
     parser.add_argument("-t", "--tweetskb", type=Path, required=True,
                         help="Path of the TweetsKB graphs representing the tweets.")
     parser.add_argument("-d", "--dbpedia", type=Path, required=True,
@@ -72,6 +72,7 @@ if __name__ == "__main__":
     DBPEDIA_NEIGHBORS = args.dbpedia
     TWEETSKB_NEIGHBORS = args.tweetskb
 
-    logger.debug(f"Output will be generated at {GRAPHS}/{args.id}.ttl")
+    logger.info(f"Output will be saved at {GRAPHS}")
 
-    main(args)
+    asyncio.run(main(args))
+    sys.exit(0)

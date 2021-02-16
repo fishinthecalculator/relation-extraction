@@ -44,7 +44,7 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
     license expat
 
 process merge-feature-graphs (with state-dir)
-  packages "coreutils" "python-wrapper" "python-rdflib" "parallel"
+  packages "coreutils" "python-wrapper" "python-rdflib"
   inputs
     . tweets: : file state-dir / "tweets"
     . uby-dir: : file state-dir / "uby-neighbors"
@@ -53,7 +53,7 @@ process merge-feature-graphs (with state-dir)
   outputs
     . graphs: : file state-dir / "graphs"
   # bash {
-    cat {{inputs:tweets}}/ids.tsv | parallel "python bin/merge_graphs.py -i {} -u {{inputs:uby-dir}} -d {{inputs:rel}} -t {{inputs:tweetskb-dir}} -o {{outputs:graphs}}"
+    python bin/merge_graphs.py -i {{inputs:tweets}}/ids.tsv -u {{inputs:uby-dir}} -d {{inputs:rel}} -t {{inputs:tweetskb-dir}} -o {{outputs:graphs}}
   }
 
 process run-fim (with state-dir)

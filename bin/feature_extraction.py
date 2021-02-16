@@ -4,7 +4,7 @@ import sys
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from relext.util import make_parser, make_logger, process_stdin_or_file, augment_parser, make_extractor
+from relext.util import make_parser, make_logger, process_stdin_or_file, fe_parser, make_extractor
 
 
 def main(args):
@@ -23,7 +23,7 @@ if __name__ == "__main__":
                         help="Data source to extract features from. "
                              f"It must be one of \n{make_extractor.keys()}")
     args, rest = parser.parse_known_args()
-    parser = augment_parser(args.source, parser)
+    parser = fe_parser(args.source, parser)
     args = parser.parse_args()
     main(args)
 

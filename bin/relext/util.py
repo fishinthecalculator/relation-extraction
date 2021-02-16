@@ -33,7 +33,7 @@ def make_logger(name):
     return logging.getLogger(name)
 
 
-def augment_parser(source, parser):
+def fe_parser(source, parser):
     if source == "tweetskb":
         parser.add_argument("-t", "--tweetskb", type=Path, required=True,
                             help="Path of the nt dump of TweetsKB.")

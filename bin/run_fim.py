@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import concurrent.futures
 import os
 import pickle
 import sys
@@ -17,7 +16,7 @@ sys.path.insert(0, this_dir)
 from relext.util import make_parser, make_logger, process_stdin_or_file
 
 logger = make_logger("run_fim")
-from relext.kb.graph import load
+from relext.kb.graph import load_parallel
 from relext.kb.prefix import NEE, LEMON, SIOC
 
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis", "results")
@@ -79,28 +78,17 @@ def bag_of_triples(tweet_graph):
     return bag
 
 
-def load_one(line):
-    tweet_path = Path(GRAPHS, f"{line.strip()}.ttl")
-    if tweet_path.is_file():
-        return load(tweet_path, fmt="ttl")
-    else:
-        logger.debug(f"{tweet_path} doesn't exist.")
-
-
-def load_parallel(lines, func):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(lambda tweet: func(load_one(tweet)), l)
-                   for l in lines]
-        return [fut.result() for fut in futures]
-
-
 def make_bags(lines, func, bags_path):
     logger.info("Computing bags of items...")
     start = time.time()
     headers_pickle_path = Path(bags_path.parent, "headers.pickle")
+    graphs = [p for p in
+              (Path(GRAPHS, f"{line.strip()}.ttl")
+               for line in lines)
+              if p.is_file()]
 
     bags = [bag
-            for bag in load_parallel(lines, func)
+            for bag in load_parallel(graphs, func)
             if len(bag) > 0]
 
     # Make a map of unique strings to natural numbers.

@@ -1,3 +1,4 @@
+import concurrent.futures
 import time
 import logging
 
@@ -28,7 +29,14 @@ def make_graph():
     return graph
 
 
-def load(path, fmt="turtle"):
+def load_parallel(graphs, func=id):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(lambda tweet: func(load(tweet)), g)
+                   for g in graphs]
+        return [fut.result() for fut in futures]
+
+
+def load(path, fmt="ttl"):
     path = str(path)
     graph = make_graph()
     logger.debug("Loading " + path + "...")

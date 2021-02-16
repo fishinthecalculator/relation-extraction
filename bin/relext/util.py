@@ -14,15 +14,15 @@ make_extractor = {
 }
 
 
-def make_parser(dataset):
+def make_parser(name):
     parser = ArgumentParser()
     parser.add_argument("-i", "--tweet-ids", type=Path, required=True,
                         help="Path of the TSV file listing the tweet ids.")
     parser.add_argument("--stdin", type=bool, default=False,
                         help="Read ids from stdin instead of the TSV file.")
     parser.add_argument("-o", "--out-dir", type=Path, required=True,
-                        help=f"Directory where the feature graphs from {dataset} "
-                             "will be exported.")
+                        help=f"Directory where the output from {name} "
+                             "will be saved.")
     return parser
 
 
@@ -56,7 +56,7 @@ def fe_parser(source, parser):
     return parser
 
 
-def process_stdin_or_file(args, func):
+def process_stdin_or_file(args, func=lambda fp: fp.readlines()):
     if args.stdin:
         return func(sys.stdin)
     else:

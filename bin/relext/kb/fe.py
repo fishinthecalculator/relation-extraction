@@ -1,13 +1,16 @@
+import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from itertools import permutations
 from pathlib import Path
 
-from rdflib import Graph, Literal, URIRef
+from rdflib import Literal, URIRef
 from rdflib.util import guess_format
 
 from .graph import load, make_graph, sub_obj_dfs
 from .prefix import NEE, SIOC, SCHEMA, LEMON
+
+logger = logging.getLogger(__name__)
 
 
 def cut(strings, field: int, sep="\t"):
@@ -50,6 +53,7 @@ class FeatureExtractor(ABC):
 
     def load_data(self):
         if not self.data_is_loaded:
+            logger.info(f"Loading {self.data_path}...")
             self.g = load(self.data_path, self.fmt)
             self.data_is_loaded = True
 

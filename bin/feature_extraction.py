@@ -8,7 +8,8 @@ from relext.util import make_parser, make_logger, process_stdin_or_file, fe_pars
 
 
 def main(args):
-    logger = make_logger("feature-extraction-" + args.source)
+    logger = make_logger("feature_extraction_" + args.source)
+    logger.info(f"Extracting features from {args.source}...")
     fe = make_extractor[args.source](args)
     fe.load_data()
 

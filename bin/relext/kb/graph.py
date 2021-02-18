@@ -11,10 +11,25 @@ from .prefix import all_prefixes
 logger = logging.getLogger(__name__)
 
 
-def sub_obj_dfs(g, node, current_level=0, max_level=10, visited=defaultdict(bool)):
+def sub_obj_bfs(g, node, max_level=10):
+    visited = defaultdict(int)
+    border = [(node, 0)]
+    while len(border) > 0:
+        n, l = border.pop(0)
+        for t in g.triples((n, None, None)):
+            if not visited[t[2]]:
+                visited[t[2]] = True
+                yield t
+                if l <= (max_level - 1):
+                    border.append((t[2], l + 1))
+
+
+def sub_obj_dfs(g, node, current_level=0, max_level=10, visited=None):
+    if visited is None:
+        visited = defaultdict(bool)
     for t in g.triples((node, None, None)):
-        if not visited[t]:
-            visited[t] = True
+        if not visited[t[2]]:
+            visited[t[2]] = True
             yield t
             if current_level <= (max_level - 1):
                 yield from sub_obj_dfs(g, t[2],
@@ -32,7 +47,7 @@ def make_graph():
 def load_parallel(graphs, func=id):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(lambda tweet: func(load(tweet)), g)
-                   for g in graphs]
+                   for g in graphs if g.is_file()]
         return [fut.result() for fut in futures]
 
 

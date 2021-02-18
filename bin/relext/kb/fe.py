@@ -7,7 +7,7 @@ from pathlib import Path
 from rdflib import Literal, URIRef
 from rdflib.util import guess_format
 
-from .graph import load, make_graph, sub_obj_dfs
+from .graph import load, make_graph, sub_obj_bfs
 from .prefix import NEE, SIOC, SCHEMA, LEMON
 
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ class DbpediaFE(FeatureExtractor):
             uris = DbpediaFE.get_uris(graph_path)
             if 0 < len(uris) < 2:
                 # Add n-hops neighbors.
-                for t in sub_obj_dfs(self.g, uris[0], max_level=self.max_level):
+                for t in sub_obj_bfs(self.g, uris[0], max_level=self.max_level):
                     graph.add(t)
             elif len(uris) >= 2:
                 for perm in permutations(uris, 2):
@@ -114,7 +114,7 @@ class DbpediaFE(FeatureExtractor):
 
                     # Add n-hops neighbors.
                     for node in (sub, obj):
-                        for t in sub_obj_dfs(self.g, node, max_level=self.max_level):
+                        for t in sub_obj_bfs(self.g, node, max_level=self.max_level):
                             graph.add(t)
 
         return graph
@@ -152,7 +152,7 @@ class UbyFE(FeatureExtractor):
                         graph.add((sense, LEMON.canonicalForm, canonical_form))
 
                         # Add n-hops neighbors.
-                        for t in sub_obj_dfs(self.g, sense, max_level=self.max_level):
+                        for t in sub_obj_bfs(self.g, sense, max_level=self.max_level):
                             graph.add(t)
         return graph
 

@@ -10,7 +10,7 @@ from relext.kb.fe import TweetsKbFE, UbyFE, DbpediaFE
 make_extractor = {
     "tweetskb": lambda args: TweetsKbFE(args.tweetskb, args.out_dir),
     "uby": lambda args: UbyFE(args.uby, args.out_dir, args.tweets, args.split_file, args.n_hops),
-    "dbpedia": lambda args: DbpediaFE(args.dbpedia, args.out_dir, args.tweets)
+    "dbpedia": lambda args: DbpediaFE(args.dbpedia, args.out_dir, args.tweets, max_level=args.n_hops)
 }
 
 
@@ -34,12 +34,12 @@ def make_logger(name):
 
 
 def fe_parser(source, parser):
+    parser.add_argument("-n", "--n-hops", type=int, default=10,
+                        help="The number of hops to explore from each node.")
     if source == "tweetskb":
         parser.add_argument("-t", "--tweetskb", type=Path, required=True,
                             help="Path of the nt dump of TweetsKB.")
     elif source == "uby":
-        parser.add_argument("-n", "--n-hops", type=int, default=10,
-                            help="The number of hops to explore from each node.")
         parser.add_argument("-t", "--tweets", type=Path, required=True,
                             help="Path of the directory of the tweets with multiple entities.")
         parser.add_argument("-f", "--split-file", type=Path, required=True,

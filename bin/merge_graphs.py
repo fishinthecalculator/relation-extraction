@@ -120,8 +120,7 @@ async def merge_graphs(tweet_id, b_type):
 
     # Merge tweet graphs.
     datasets = [UBY_NEIGHBORS,
-                DBPEDIA_NEIGHBORS,
-                TWEETSKB_NEIGHBORS]
+                DBPEDIA_NEIGHBORS]
     for d in datasets:
         triples = Path(d, f"{tweet_id}.ttl")
         if triples.is_file():
@@ -142,8 +141,6 @@ async def main(args):
 
 if __name__ == "__main__":
     parser = make_parser("merge-graphs")
-    parser.add_argument("-t", "--tweetskb", type=Path, required=True,
-                        help="Path of the TweetsKB graphs representing the tweets.")
     parser.add_argument("-d", "--dbpedia", type=Path, required=True,
                         help="Path of the Dbpedia graphs representing the entities.")
     parser.add_argument("-u", "--uby", type=Path, required=True,

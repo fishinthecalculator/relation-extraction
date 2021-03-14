@@ -165,7 +165,16 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
                                 (let ((store (cdr input)))
                                   (string-append store "/bin" ":"
                                                  store "/sbin")))
-                              %build-inputs)))))
+                              %build-inputs))))
+                  (when (string-suffix? ".py" program)
+                    (wrap-program (string-append ndiff "/bin/ndiff")
+                      `("PYTHONPATH" prefix
+                        (,@(map (compose python-path cdr)
+                            (filter
+                             (lambda (input)
+                               ;; We only add python inputs to PYTHONPATH.
+                               (string-prefix? "python" (car input)))
+                             %build-inputs)))))))
                 (filter
                  ;; We only wrap user-facing scripts.
                  (lambda (f) (not (string-contains f "/relext/")))

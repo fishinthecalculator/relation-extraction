@@ -5,7 +5,7 @@ set -x
 
 remote_dir="${HOME}/remote"
 thesis_dir="${HOME}/thesis"
-tarball="$(basename "$(find "$remote_dir" -name "*.tar.gz" | head -1)")"
+tarball="$(basename "$(find "${remote_dir}/" -name "*.tar.gz" | head -1)")"
 
 rm -rf "${thesis_dir}/"*.tar.gz
 mv "${remote_dir}/${tarball}" "${thesis_dir}/"

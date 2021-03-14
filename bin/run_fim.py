@@ -3,7 +3,7 @@ import os
 import pickle
 import sys
 import time
-
+from argparse import ArgumentParser
 from collections import defaultdict
 from pathlib import Path
 
@@ -13,16 +13,14 @@ import numpy as np
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
-from relext.util import make_parser, make_logger, process_stdin_or_file
+from relext.util import make_logger
 
 logger = make_logger("run_fim")
-from relext.kb.graph import load_parallel
-from relext.kb.prefix import NEE, LEMON, SIOC
-
 PROJECT_ROOT = Path(os.environ["HOME"], "code", "Thesis", "results")
 
 FIM = Path(PROJECT_ROOT, "fim")
 GRAPHS = Path(PROJECT_ROOT, "graphs")
+
 
 # Support(B) = (Transactions containing (B))/(Total Transactions)
 #
@@ -36,64 +34,16 @@ GRAPHS = Path(PROJECT_ROOT, "graphs")
 #
 # Lift(A→B) = (Confidence (A→B))/(Support (B))
 
-uninteresting_terms = {
-    LEMON.writtenRep,
-    LEMON.canonicalForm,
-    NEE.hasMatchedURI,
-    NEE.detectedAs,
-    SIOC.id,
-}
-uninteresting_triples = {SIOC.id}
+def p_load(path):
+    with open(path, "rb") as fp:
+        return pickle.load(fp)
 
 
-def bag_of_terms(tweet_graph):
-    # BA :spouse :MA
-    # bag { :BA, :spouse, :MA, ?v0-:spouse-:MA, .... }
-    # the indices of the variable are progressive naturals
-
-    # bag.append(f"{triple[0]}_{triple[1]}_X")
-    # bag.append(f"X_{triple[1]}_{triple[2]}")
-
-    # return tuple(str(term) for triple in tweet_graph.triples((None, None, None)) for term in triple)
-    return [
-        str(term)
-        for triple in tweet_graph.triples((None, None, None))
-        for term in triple
-        if term not in uninteresting_terms
-    ]
-
-
-def bag_of_triples(tweet_graph):
-    def to_n3(term):
-        return term.n3(tweet_graph.namespace_manager)
-
-    # BA :spouse :MA
-    # bag { :BA, :spouse, :MA, ?v0-:spouse-:MA, .... }
-    # the indices of the variable are progressive naturals
-
-    # bag.append(f"{triple[0]}_{triple[1]}_X")
-    # bag.append(f"X_{triple[1]}_{triple[2]}")
-    bag = []
-    for triple in tweet_graph.triples((None, None, None)):
-        if triple[1] not in uninteresting_triples:
-            triple = [to_n3(t) for t in triple]
-            bag.extend(
-                [
-                    f"{triple[0]}_{triple[1]}_{triple[2]}",
-                    f"{triple[0]}_{triple[1]}_X",
-                    # f"X_{triple[1]}_{triple[2]}"
-                ]
-            )
-    return bag
-
-
-def make_bags(lines, func, bags_path):
+def map_bags(bags_path):
+    headers_pickle_path = Path(bags_path.parent, f"headers.pickle")
     start = time.time()
-    headers_pickle_path = Path(bags_path.parent, "headers.pickle")
-    graphs = (Path(GRAPHS, f"{line.strip()}.ttl") for line in lines)
-
-    logger.info("Computing bags of items...")
-    bags = [bag for bag in load_parallel(graphs, func) if len(bag) > 0]
+    logger.info("Loading bags of items...")
+    bags = [bag for bag in map(p_load, GRAPHS.glob("*.pickle")) if len(bag) > 0]
 
     logger.info("Enumerating unique items...")
     # Make a map of unique strings to natural numbers.
@@ -123,20 +73,12 @@ def make_bags(lines, func, bags_path):
     return bags
 
 
-bag_functions = {"term": bag_of_terms, "triples": bag_of_triples}
-
-
 def main(args):
-    rules_pickle_path = Path(FIM, "rules.npz")
-    mapped_bags_pickle_path = Path(FIM, "mapped-bags.pickle")
+    rules_pickle_path = Path(FIM, f"rules.npz")
+    mapped_bags_pickle_path = Path(FIM, f"mapped-bags.pickle")
 
     if not mapped_bags_pickle_path.is_file():
-        bags = process_stdin_or_file(
-            args,
-            lambda l: make_bags(
-                l, bag_functions[args.bag_type], mapped_bags_pickle_path
-            ),
-        )
+        bags = map_bags(mapped_bags_pickle_path)
     else:
         with open(mapped_bags_pickle_path, "rb") as fp:
             bags = pickle.load(fp)
@@ -152,7 +94,7 @@ def main(args):
             # 4e-3 -> about 14G
             # 3e-3 -> no way
             # 1e-3 -> 15G and counting..
-            supp=5e-3,
+            supp=1e-2,
             zmin=2,
             conf=60,  # minimum confidence of an assoc. rule
             # C: rule confidence as a percentage
@@ -171,22 +113,16 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = make_parser("FIM")
+    parser = ArgumentParser()
+    parser.add_argument("-o", "--out-dir", type=Path, required=True,
+                        help=f"Directory where the output from FIM "
+                             "will be saved.")
     parser.add_argument(
         "-g",
         "--graphs-dir",
         type=Path,
         required=True,
         help="Path to the merged graphs representing the tweets.",
-    )
-    parser.add_argument(
-        "-t",
-        "--bag-type",
-        type=str,
-        default="triples",
-        help="Type of the bags that'll be used as transactions in FIM. Possible types are:\n"
-        "\t - terms"
-        "\t - triples",
     )
 
     args = parser.parse_args()

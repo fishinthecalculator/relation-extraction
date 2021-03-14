@@ -1,7 +1,5 @@
-import concurrent.futures
-import time
+import asyncio
 import logging
-
 from collections import defaultdict
 
 from rdflib import Graph
@@ -44,19 +42,23 @@ def make_graph():
     return graph
 
 
-def load_parallel(graphs, func=id):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(lambda tweet: func(load(tweet)), g)
-                   for g in graphs if g.is_file()]
-        return [fut.result() for fut in futures]
+def read_graph(path):
+    with open(path) as fp:
+        return fp.read()
 
 
-def load(path, fmt="ttl"):
-    path = str(path)
-    graph = make_graph()
-    logger.debug("Loading " + path + "...")
-    start = time.time()
-    graph.parse(location=path, format=fmt)
-    logger.debug(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
+async def load(path, graph=None, fmt="text/turtle"):
+    loop = asyncio.get_running_loop()
+    if graph is None:
+        graph = make_graph()
+    graph_str = await loop.run_in_executor(None, read_graph, path)
+    return graph.parse(data=graph_str, format=fmt)
 
-    return graph
+
+def is_empty_graph(graph):
+    iterable = graph.triples((None, None, None))
+    try:
+        next(iterable)
+    except StopIteration:
+        return True
+    return False

@@ -1,4 +1,7 @@
+import asyncio
 import logging
+import pickle
+import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from itertools import permutations
@@ -7,7 +10,7 @@ from pathlib import Path
 from rdflib import Literal, URIRef
 from rdflib.util import guess_format
 
-from .graph import load, make_graph, sub_obj_bfs
+from .graph import make_graph, sub_obj_bfs, is_empty_graph
 from .prefix import NEE, SIOC, SCHEMA, LEMON
 
 logger = logging.getLogger(__name__)
@@ -53,8 +56,21 @@ class FeatureExtractor(ABC):
 
     def load_data(self):
         if not self.data_is_loaded:
-            logger.info(f"Loading {self.data_path}...")
-            self.g = load(self.data_path, self.fmt)
+            data_pickled = Path(f"{self.data_path}.pickle")
+            if data_pickled.is_file():
+                logger.info(f"Loading {data_pickled}...")
+                with open(data_pickled, "rb") as fp:
+                    self.g = pickle.load(fp)
+            else:
+                graph = make_graph()
+                start = time.time()
+
+                logger.info(f"Loading {self.data_path}...")
+                self.g = graph.parse(location=str(self.data_path), format=self.fmt)
+                logger.debug(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
+
+                with open(data_pickled, "wb") as fp:
+                    pickle.dump(self.g, fp)
             self.data_is_loaded = True
 
     @abstractmethod
@@ -65,19 +81,17 @@ class FeatureExtractor(ABC):
         assert self.data_is_loaded, f"{self.data_path} has not been loaded! You MUST call `extractor.load_data()` !"
         return self._extract(tweet_id)
 
-    def extract_export(self, tweet_id):
+    async def extract_export(self, tweet_id):
         graph = self.extract(tweet_id)
-        if graph is not None:
-            self.export(graph, tweet_id)
+        if (graph is not None) and (not is_empty_graph(graph)):
+            await self.export(graph, tweet_id)
 
-    def process_tweets(self, tweet_ids):
-        for tweet_id in tweet_ids:
-            self.extract_export(tweet_id.strip())
-
-    def export(self, graph, tweet_id, fmt="turtle"):
-        graph.serialize(destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
-                        encoding="utf-8",
-                        format=fmt)
+    async def export(self, graph, tweet_id, fmt="turtle"):
+        loop = asyncio.get_running_loop()
+        export = lambda i: graph.serialize(destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
+                                           encoding="utf-8",
+                                           format=fmt)
+        await loop.run_in_executor(None, export, tweet_id)
 
 
 class DbpediaFE(FeatureExtractor):
@@ -95,7 +109,7 @@ class DbpediaFE(FeatureExtractor):
 
     def _extract(self, tweet_id):
         graph = make_graph()
-        graph_path = Path(self.tweets_path, f"{tweet_id}.ttl")
+        graph_path = Path(self.tweets_path, f"{tweet_id}.tsv")
         if graph_path.is_file():
             uris = DbpediaFE.get_uris(graph_path)
             if 0 < len(uris) < 2:
@@ -134,7 +148,7 @@ class UbyFE(FeatureExtractor):
 
     def _extract(self, tweet_id):
         graph = make_graph()
-        graph_path = Path(self.entities_path, f"{tweet_id}.ttl")
+        graph_path = Path(self.entities_path, f"{tweet_id}.tsv")
         if graph_path.is_file():
             words = (splitted
                      for token in UbyFE.get_tokens(graph_path)
@@ -164,7 +178,6 @@ class TweetsKbFE(FeatureExtractor):
     def _extract(self, tweet_id):
         tweet_graph = make_graph()
         for post in self.g.subjects(SIOC.id, Literal(tweet_id)):
-            tweet_graph.add((post, SIOC.id, Literal(tweet_id)))
             for entity in self.g.objects(post, SCHEMA.mentions):
                 # Detected entity Dbpedia URI.
                 for uri in self.g.objects(entity, NEE.hasMatchedURI):

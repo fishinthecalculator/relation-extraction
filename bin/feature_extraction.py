@@ -10,15 +10,17 @@ sys.path.insert(0, this_dir)
 from relext.util import make_parser, make_logger, process_stdin_or_file, fe_parser, make_extractor
 
 
-def main(args):
+async def main(args):
     logger = make_logger("feature_extraction_" + args.source)
     logger.info(f"Extracting features from {args.source}...")
     fe = make_extractor[args.source](args)
     fe.load_data()
 
-    process_stdin_or_file(args, fe.process_tweets)
-
-    sys.exit(0)
+    loop = asyncio.get_running_loop()
+    lines = await loop.run_in_executor(None, process_stdin_or_file, args)
+    await asyncio.gather(*(fe.extract_export(tweet_id.strip())
+                           for tweet_id in lines))
+    logger.info(f"Exported features from {args.source} to {args.out_dir}")
 
 
 if __name__ == "__main__":
@@ -29,6 +31,5 @@ if __name__ == "__main__":
     args, rest = parser.parse_known_args()
     parser = fe_parser(args.source, parser)
     args = parser.parse_args()
-    main(args)
-
+    asyncio.run(main(args))
     sys.exit(0)

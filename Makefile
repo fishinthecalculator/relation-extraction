@@ -25,7 +25,6 @@ fim: graph
 test: graph
 	mkdir -p "${TEST_DIR}"
 
-	head -n ${N_LINES} datasets/vn.nt > ${TEST_UBY}
 	head -n ${N_LINES} datasets/first_10M_lines.n3 > ${TEST_TWEETSKB}
 	head -n ${N_LINES} datasets/mappingbased_properties_cleaned_en.nt > ${TEST_DBPEDIA}
 
@@ -38,7 +37,7 @@ compress:
 	tar -cf archive/$(shell date +%Y-%m-%d+%H.%M)-$(shell git log | head -1 | cut -d " " -f 2).tar.bz2 --use-compress-prog=pbzip2 results/
 
 scrape:
-	python bin/tweet_text.py -i results/tweets -o results/tweets
+	tweet_text.py -i results/tweets -o results/tweets
 
 clean:
 	rm -rf results "${TEST_DIR}"/*

@@ -1,7 +1,6 @@
-import logging.config
-import os
-import sys
 import json
+import logging.config
+import sys
 from argparse import ArgumentParser
 from pathlib import Path
 

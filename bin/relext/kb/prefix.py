@@ -9,6 +9,7 @@ SIOC_T = Namespace("http://rdfs.org/sioc/types#")
 ONYX = Namespace("http://www.gsi.dit.upm.es/ontologies/onyx/ns#")
 WNA = Namespace("http://www.gsi.dit.upm.es/ontologies/wnaffect/ns#")
 LEMON = Namespace("http://www.monnet-project.eu/lemon#")
+LEMON_UBY = Namespace("http://lemon-model.net/lexica/uby/")
 DBO = Namespace("http://dbpedia.org/ontology/")
 DBR = Namespace("http://dbpedia.org/resource/")
 
@@ -18,6 +19,7 @@ all_prefixes = [("rdf", RDF),
                 ("dc", DC),
                 ("dcterms", DCTERMS),
                 ("lemon", LEMON),
+                ("lemonuby", LEMON_UBY),
                 ("nee", NEE),
                 ("dbo", DBO),
                 ("dbr", DBR),

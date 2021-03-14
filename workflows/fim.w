@@ -43,32 +43,17 @@ Finally, there is a function @code{arules} for generating association rules (sim
 to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to generate association rules."
     license expat
 
-process merge-feature-graphs (with state-dir)
-  packages "coreutils" "python-wrapper" "python-rdflib"
-  inputs
-    . tweets: : file state-dir / "tweets"
-    . uby-dir: : file state-dir / "uby-neighbors"
-    . rel: : file state-dir / "related"
-    . tweetskb-dir: : file state-dir / "tweetskb"
-  outputs
-    . graphs: : file state-dir / "graphs"
-  # bash {
-    python bin/merge_graphs.py -i {{inputs:tweets}}/ids.tsv -u {{inputs:uby-dir}} -d {{inputs:rel}} -t {{inputs:tweetskb-dir}} -o {{outputs:graphs}}
-  }
-
 process run-fim (with state-dir)
   packages "python-wrapper" "python-numpy" "python-rdflib" python-pyfim
   inputs
-    . tweets: : file state-dir / "tweets"
     . graphs: : file state-dir / "graphs"
   outputs
     . fim-out: : file state-dir / "fim"
   # bash {
-    python bin/run_fim.py -i {{inputs:tweets}} -g {{inputs:graphs}} -o {{outputs:fim-out}}
+    python bin/run_fim.py -g {{inputs:graphs}} -o {{outputs:fim-out}}
   }
 
 workflow frequent-itemset-mining
   processes
     auto-connect
-      merge-feature-graphs default-state-dir
       run-fim default-state-dir

@@ -10,6 +10,9 @@ define tweet-ids-workflow
 define tweetskb-workflow
   load-workflow "workflows/tweetskb.w"
 
+define merge-workflow
+  load-workflow "workflows/merge.w"
+
 define fim-workflow
   load-workflow "workflows/fim.w"
 
@@ -24,6 +27,6 @@ workflow main
         workflow-processes dbpedia-workflow
         workflow-processes uby-workflow
         workflow-processes tweet-ids-workflow
-        workflow-processes tweetskb-workflow
+        workflow-processes merge-workflow
         workflow-processes fim-workflow
         workflow-processes utils

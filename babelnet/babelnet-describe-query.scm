@@ -1,8 +1,14 @@
+#!/run/current-system/profile/bin/guile \
+-e main -s
+!#
+
 (use-modules (guix build utils)
+             (ice-9 getopt-long)
              (ice-9 match)
              (ice-9 receive)
              (ice-9 pretty-print)
              (ice-9 rdelim)
+             (ice-9 threads)
              (sparql driver)
              (sparql lang)
              (sparql util)
@@ -11,39 +17,22 @@
              (web response)
              (web uri))
 
-(define (interleave a b)
-  (if (null? a)
-      b
-      (cons (car a)
-            (interleave b (cdr a)))))
+(define option-spec
+  '((split-token (single-char #\s) (value #t))
+    (out-dir (single-char #\o) (value #t))
+    (tweets-entities (single-char #\t) (value #t))
+    (version (single-char #\v) (value #f))
+    (help (single-char #\h) (value #f))))
 
 (define %api-key "324b7843-45b3-4d9e-828d-144eaf684d79")
 
-(define (generate-ids prefix number)
-  (map
-   (lambda (n)
-     (string->symbol
-      (string-append prefix (number->string n))))
-   (iota number)))
-
-(define (describe-query ids)
-  (let ((bn (prefix "http://babelnet.org/rdf/"))
-        (lemon (prefix "http://www.lemon-model.net/lemon#"))
-        (lexinfo (prefix "http://www.lexinfo.net/ontology/2.0/lexinfo#"))
-        (rdfs (prefix "http://www.w3.org/2000/01/rdf-schema#")))
-    (describe `(,@(map bn ids)))))
-
-(define (select-labels-query ids)
+(define (describe-queryd label)
   (let ((bn (prefix "http://babelnet.org/rdf/"))
         (bn-lemon (prefix "http://babelnet.org/model/babelnet#"))
-        (rdfs (prefix "http://www.w3.org/2000/01/rdf-schema#"))
-        (synsets (generate-ids "s" 5))
-        (labels (generate-ids "l" 5))
-        (ids (map (lambda (id) (if (string-prefix? "s" id) (string-drop id 1) id)) ids)))
-    (select `(,@(interleave synsets labels))
-      `(,@(map (lambda (syn id) `(,syn ,(bn-lemon "synsetID") ,(bn id))) synsets ids)
-        ,@(map (lambda (syn lab) `(,syn ,(rdfs "label") ,lab)) synsets labels))
-        #:distinct #t)))
+        (rdfs (prefix "http://www.w3.org/2000/01/rdf-schema#")))
+    (describe `(synset)
+              `((synset ,(bn-lemon "synsetID") id)
+                (synset ,(rdfs "label") ,label)))))
 
 (define* (query-babelnet query
                          #:key
@@ -60,14 +49,13 @@
      (content-type . (application/x-www-form-urlencoded))
      (accept . ((,(string->symbol type)))))))
 
-(define* (call-with-line port #:optional (proc #f))
+(define* (call-with-line port #:optional (proc (lambda (x) x)))
   (let loop ((acc '()))
     (match (read-line port)
       ((? eof-object?) acc)
       (line
-       (when proc
-         (proc line))
-       (loop (cons line acc))))))
+       (let ((res (proc line)))
+         (loop (cons res acc)))))))
 
 (define (call-with-query query proc)
  (receive (header port)
@@ -88,22 +76,15 @@
                             (display line)
                             (newline))))))
 
-(define (display-labels ids)
-  (call-with-query
-   (select-labels-query ids)
-   (lambda (port)
-     (call-with-line port (lambda (line)
-                            (display line)
-                            (newline))))))
-
-(define lines
-  (call-with-input-file "first_950_babel_ids.txt"
-    (lambda (port)
-      (map (lambda (l) (string-append "s" l))
-           (call-with-line port)))))
+;; (define lines
+;;   (call-with-input-file "first_950_babel_ids.txt"
+;;     (lambda (port)
+;;       (map (lambda (l) (string-append "s" l))
+;;            (call-with-line port)))))
 
 
 (define* (call-with-subsets proc l #:optional (n 5))
+  "Calls PROC over N (or less) elements at a time from L"
  (let loop ((ids l))
   (if (<= (length ids) n)
       (proc ids)
@@ -112,14 +93,21 @@
         (proc n-ids)
         (loop rest)))))
 
-;; (call-with-subsets (lambda (ids)
-;;                      (display-describe ids)
-;;                      (sleep 1))
-;;                    lines)
+(define (main args)
+  (let* ((options (getopt-long args option-spec))
+         (split-token (option-ref options 'split-token #f))
+         (out-dir (option-ref options 'out-dir #f))
+         (tweets-entities (option-ref options 'tweets-entities #f))
+         (tweets
+          (call-with-input-file tweets-entities
+            (lambda (port)
+              (call-with-line port
+                              (lambda (line)
+                                (let ((row (string-split line #\tab)))
+                                  (cons (first row) (last row)))))))))
 
-;; (call-with-subsets (lambda (ids)
-;;                      (display-labels ids)
-;;                      (sleep 1))
-;;                    lines)
-
-(display (describe-query '("http://example.org#Alice" "http://example.org#Bob")))
+    (par-map tweets
+             (lambda (tweet-pair)
+               (let ((tid (car tweet-pair))
+                     (tokens (cdr tweet-pair)))
+                 )))))

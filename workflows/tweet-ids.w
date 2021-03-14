@@ -8,7 +8,7 @@ process select-tweets-entities (with state-dir)
   inputs tweetskb: "inputs/tweetskb"
   outputs
     . entities: : file state-dir / "entities"
-    . tweets: : file state-dir / "tweets"
+    . ids: : file state-dir / "tweets" / "ids.tsv"
   # bash {
     bin/select_tweets_entities.sh {{inputs:tweetskb}} {{state-dir}}
   }

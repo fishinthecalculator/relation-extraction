@@ -7,10 +7,10 @@ process tweetskb-feature-extraction (with state-dir)
   packages "python-wrapper" "python-rdflib"
   inputs
     . tweetskb: "inputs/tweetskb"
-    . tweets: : file state-dir / "tweets"
+    . ids: : file state-dir / "tweets" / "ids.tsv"
   outputs tweetskb-dir: : file state-dir / "tweetskb"
   # bash {
-    python bin/feature_extraction.py -s tweetskb -t {{inputs:tweetskb}} -i {{inputs:tweets}} -o {{outputs:tweetskb-dir}}
+    python bin/feature_extraction.py -s tweetskb -t {{inputs:tweetskb}} -i {{inputs:ids}} -o {{outputs:tweetskb-dir}}
   }
 
 workflow tweetskb

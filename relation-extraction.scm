@@ -173,9 +173,7 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
                #t)))))
       (propagated-inputs
        `(("bash" ,bash)
-
          ("coreutils" ,coreutils)
-         
          ("fd" ,fd)
          ("graphviz" ,graphviz)
          ("make" ,gnu-make)

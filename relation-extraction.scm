@@ -167,7 +167,7 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
                                                  store "/sbin")))
                               %build-inputs))))
                   (when (string-suffix? ".py" program)
-                    (wrap-program (string-append ndiff "/bin/ndiff")
+                    (wrap-program program
                       `("PYTHONPATH" prefix
                         (,@(map (compose python-path cdr)
                             (filter

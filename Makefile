@@ -60,6 +60,6 @@ scrape:
 	tweet_text.py -i "${IDS_DIR}" -o "${IDS_DIR}"
 
 clean:
-	fd -HI . "${RESULTS}/" -tf -X rm -f
-	fd -HI . "${INPUTS}/" -X rm -f
+	find "${RESULTS}" -exec rm -rv {} \;
+	find "${RESULTS}" -exec rm -rv {} \;
 	git checkout -- "${RESULTS}" "${INPUTS}"

@@ -25,6 +25,9 @@ N_LINES=500000
 
 all: fim
 
+compute:
+	setup_compute.sh
+
 setup:
 	link_inputs.sh "${DBPEDIA}" "${TWEETSKB}" "${UBY}"
 

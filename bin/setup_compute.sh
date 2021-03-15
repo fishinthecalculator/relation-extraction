@@ -14,3 +14,5 @@ find . -delete
 
 tar -xvf "${remote_dir}/${tarball}"
 rm -rf "${remote_dir}/${tarball}"
+
+exit 0

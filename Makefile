@@ -61,5 +61,5 @@ scrape:
 
 clean:
 	find "${RESULTS}" -exec rm -rv {} \;
-	find "${RESULTS}" -exec rm -rv {} \;
+	find "${INPUTS}" -exec rm -rv {} \;
 	git checkout -- "${RESULTS}" "${INPUTS}"

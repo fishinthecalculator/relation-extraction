@@ -9,7 +9,7 @@ tarball="$(basename "$(find "${remote_dir}/" -name "*.tar.gz" | head -1)")"
 
 cd "${HOME}/.local/relext/"
 
-find . -exec rm -rfv {} \;
+find . -exec sh -c 'chmod 777 "$1" && rm -rfv "$1"' _ {} \;
 
 tar -xvf "${remote_dir}/${tarball}"
 rm -rf "${remote_dir:?}/${tarball}"

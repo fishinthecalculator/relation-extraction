@@ -11,6 +11,8 @@ bindir="${HOME}/.local/relext/"
 
 cd "$bindir"
 
+export PATH="/vol/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/games:/vol/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/games:/usr/local/bin:/usr/bin:/bin:/usr/games"
+
 find "$bindir" -type f | while read -r f; do
     chmod +w "$f" "$(dirname "$f")"
     rm -vrf "$f"

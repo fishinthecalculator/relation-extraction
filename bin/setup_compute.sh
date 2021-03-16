@@ -7,9 +7,14 @@ remote_dir="${HOME}/remote"
 tarball="$(basename "$(find "${remote_dir}/" -name "*.tar.gz" | head -1)")"
 
 
-cd "${HOME}/.local/relext/"
+bindir="${HOME}/.local/relext/"
 
-find . -exec sh -c 'chmod 777 "$1" && rm -rfv "$1"' _ {} \;
+cd "$bindir"
+
+find "$bindir" -type f | while read -r f; do
+    chmod +w "$f" "$(dirname "$f")"
+    rm -vrf "$f"
+done
 
 tar -xvf "${remote_dir}/${tarball}"
 rm -rf "${remote_dir:?}/${tarball}"

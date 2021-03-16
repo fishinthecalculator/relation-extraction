@@ -94,7 +94,7 @@ def main(args):
             # 4e-3 -> about 14G
             # 3e-3 -> no way
             # 1e-3 -> 15G and counting..
-            supp=1e-2,
+            supp=1e-3,
             zmin=2,
             conf=60,  # minimum confidence of an assoc. rule
             # C: rule confidence as a percentage

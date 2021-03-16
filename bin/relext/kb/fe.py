@@ -69,8 +69,12 @@ class FeatureExtractor(ABC):
                 self.g = graph.parse(location=str(self.data_path), format=self.fmt)
                 logger.debug(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
 
-                with open(data_pickled, "wb") as fp:
-                    pickle.dump(self.g, fp)
+                try:
+                    with open(data_pickled, "wb") as fp:
+                        pickle.dump(self.g, fp)
+                except OSError as e:
+                    logger.error(e.strerror)
+
             self.data_is_loaded = True
 
     @abstractmethod

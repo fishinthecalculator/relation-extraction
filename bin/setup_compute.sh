@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-set -x
-
 remote_dir="${HOME}/remote"
 tarball="$(basename "$(find "${remote_dir}/" -name "*.tar.gz" | head -1)")"
 
@@ -13,7 +11,7 @@ cd "$bindir"
 
 find "$bindir" -type f | while read -r f; do
     chmod +w "$f" "$(dirname "$f")"
-    rm -vrf "$f"
+    rm -vf "$f"
 done
 
 tar -xvf "${remote_dir}/${tarball}"

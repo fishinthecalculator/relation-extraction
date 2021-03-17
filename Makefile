@@ -5,20 +5,29 @@ DATASETS=${HERE}/datasets
 INPUTS=${HERE}/inputs
 RESULTS=${HERE}/results
 
+# Workflow inputs
 UBY=${INPUTS}/uby
 TWEETSKB=${INPUTS}/tweetskb
 DBPEDIA=${INPUTS}/dbpedia
 SPLIT=${INPUTS}/split
 
+# Workflow outputs
 IDS_DIR=${RESULTS}/tweets
 IDS_TSV=${IDS_DIR}/ids.tsv
 ENTITIES=${RESULTS}/entities
 
+# Input datasets
+UBY_DATA=${DATASETS}/uby
+TWEETSKB_DATA=${DATASETS}/tweetskb
+DBPEDIA_DATA=${DATASETS}/dbpedia
+
+# Extracted features
 FEATURES=${RESULTS}/features
 DBPEDIA_FEATURES=${FEATURES}/dbpedia
 VN_FEATURES=${FEATURES}/verbnet
 BAGS=${FEATURES}/bags
 
+# Frequent itemset mining analysis outputs
 FIM=${RESULTS}/fim
 
 N_LINES=500000
@@ -29,7 +38,7 @@ compute:
 	setup_compute.sh
 
 setup:
-	link_inputs.sh "${DBPEDIA}" "${TWEETSKB}" "${UBY}"
+	link_inputs.sh "${DBPEDIA_DATA}" "${UBY_DATA}" "${TWEETSKB_DATA}"
 
 entities: setup
 	select_tweets_entities.sh "${TWEETSKB}" "${RESULTS}"

@@ -37,6 +37,7 @@ class FeatureExtractor(ABC):
         self.data_path = data_path
         self.out_path = out_path
         self.data_is_loaded = False
+        self._processed = set()
         self.g = make_graph()
 
         if not fmt:
@@ -67,7 +68,7 @@ class FeatureExtractor(ABC):
 
                 logger.info(f"Loading {self.data_path}...")
                 self.g = graph.parse(location=str(self.data_path), format=self.fmt)
-                logger.debug(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
+                logger.info(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
 
                 try:
                     with open(data_pickled, "wb") as fp:
@@ -82,13 +83,18 @@ class FeatureExtractor(ABC):
         pass
 
     def extract(self, tweet_id):
-        assert self.data_is_loaded, f"{self.data_path} has not been loaded! You MUST call `extractor.load_data()` !"
+        assert self.data_is_loaded, f"{self.data_path} has not been loaded! You MUST call `{type(self)}.load_data()` !"
         return self._extract(tweet_id)
 
     async def extract_export(self, tweet_id):
-        graph = self.extract(tweet_id)
-        if (graph is not None) and (not is_empty_graph(graph)):
-            await self.export(graph, tweet_id)
+        if tweet_id not in self._processed:
+            logger.debug(f"Extracting {tweet_id} features from {self.data_path}...")
+            graph = self.extract(tweet_id)
+            self._processed.add(tweet_id)
+            if (graph is not None) and (not is_empty_graph(graph)):
+                await self.export(graph, tweet_id)
+        else:
+            logger.warning(f"{type(self)} - duplicate tweet {tweet_id} in input stream...")
 
     async def export(self, graph, tweet_id, fmt="turtle"):
         loop = asyncio.get_running_loop()

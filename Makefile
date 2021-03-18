@@ -44,7 +44,7 @@ entities: setup
 	select_tweets_entities.sh "${TWEETSKB}" "${RESULTS}"
 
 dbpedia: entities
-	feature_extraction.py -s dbpedia -i "${IDS_TSV}" -t "${ENTITIES}" -d "${DBPEDIA}" -o "${DBPEDIA_FEATURES}"
+	feature_extraction.py -s dbpedia -i "${IDS_TSV}" -n 3 -t "${ENTITIES}" -d "${DBPEDIA}" -o "${DBPEDIA_FEATURES}"
 
 uby: dbpedia
 	feature_extraction.py -s uby -i "${IDS_TSV}" -t "${ENTITIES}" -u "${UBY}" -f "${SPLIT}" -o "${VN_FEATURES}"

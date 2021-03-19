@@ -6,8 +6,6 @@ import pickle
 import sys
 from pathlib import Path
 
-from rdflib import Literal
-
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.insert(0, this_dir)
@@ -61,7 +59,8 @@ def bag_of_terms(tweet_graph):
     bag = []
     env = Environment()
     for triple in tweet_graph.triples((None, None, None)):
-        bag.extend([to_n3(t) for t in triple if (t not in uninteresting_terms) and (not isinstance(t, Literal))])
+        bag.extend([to_n3(t) for t in triple if (t not in uninteresting_terms)  # and (not isinstance(t, Literal))
+                    ])
         if triple[1] not in uninteresting_triples:
             terms = [to_n3(t) for t in triple]
             bag.extend(
@@ -106,7 +105,7 @@ def p_dump(obj, path):
         pickle.dump(obj, fp)
 
 
-async def merge_graphs(tweet_id, b_type):
+async def merge_graphs(tweet_id, b_type, idx, length):
     def export(t_graph, t_id, t_bag):
         if not is_empty_graph(t_graph):
             p_dump(t_bag,
@@ -121,22 +120,26 @@ async def merge_graphs(tweet_id, b_type):
     # Merge tweet graphs.
     datasets = [UBY_NEIGHBORS,
                 DBPEDIA_NEIGHBORS]
+
+    await loop.run_in_executor(None, logger.debug, f"[{idx}/{length}] - Computing {tweet_id}'s bag...")
+
     for d in datasets:
         triples = Path(d, f"{tweet_id}.ttl")
         if triples.is_file():
             tweet_graph = await load(triples, graph=tweet_graph, fmt="text/turtle")
 
-    return await loop.run_in_executor(None,
-                                      export,
-                                      tweet_graph,
-                                      tweet_id,
-                                      bag_functions[b_type](tweet_graph))
+    await loop.run_in_executor(None,
+                               export,
+                               tweet_graph,
+                               tweet_id,
+                               bag_functions[b_type](tweet_graph))
 
 
 async def main(args):
     loop = asyncio.get_running_loop()
     lines = await loop.run_in_executor(None, process_stdin_or_file, args)
-    await asyncio.gather(*(merge_graphs(l.strip(), args.bag_type) for l in lines))
+    l = len(lines)
+    await asyncio.gather(*(merge_graphs(line.strip(), args.bag_type, i + 1, l) for i, line in enumerate(lines)))
 
 
 if __name__ == "__main__":
@@ -162,7 +165,7 @@ if __name__ == "__main__":
 
     UBY_NEIGHBORS = args.uby
     DBPEDIA_NEIGHBORS = args.dbpedia
-    TWEETSKB_NEIGHBORS = args.tweetskb
+    # TWEETSKB_NEIGHBORS = args.tweetskb
 
     logger.info(f"Output will be saved at {GRAPHS}")
 

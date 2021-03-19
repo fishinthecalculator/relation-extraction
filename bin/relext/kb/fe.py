@@ -87,14 +87,17 @@ class FeatureExtractor(ABC):
         return self._extract(tweet_id)
 
     async def extract_export(self, tweet_id):
+        loop = asyncio.get_running_loop()
         if tweet_id not in self._processed:
-            logger.debug(f"Extracting {tweet_id} features from {self.data_path}...")
+            await loop.run_in_executor(None, logger.debug, f"Extracting {tweet_id} features from {self.data_path}...")
             graph = self.extract(tweet_id)
             self._processed.add(tweet_id)
             if (graph is not None) and (not is_empty_graph(graph)):
                 await self.export(graph, tweet_id)
         else:
-            logger.warning(f"{type(self)} - duplicate tweet {tweet_id} in input stream...")
+            await loop.run_in_executor(None,
+                                       logger.warning,
+                                       f"{type(self)} - duplicate tweet {tweet_id} in input stream...")
 
     async def export(self, graph, tweet_id, fmt="turtle"):
         loop = asyncio.get_running_loop()

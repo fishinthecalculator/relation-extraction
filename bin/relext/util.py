@@ -57,7 +57,7 @@ def fe_parser(source, parser):
 
 def process_stdin_or_file(args, func=lambda fp: fp.readlines()):
     if args.stdin:
-        return func(sys.stdin)
+        return (line for line in sys.stdin)
     else:
         if args.tweet_ids.is_dir():
             ids = Path(args.tweet_ids, "ids.tsv")

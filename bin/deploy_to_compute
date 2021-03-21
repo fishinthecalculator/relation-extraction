@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+set -x
+
+GUIX_COMMIT="1155a88308df7649fe74bd5bb8279a4d103ce386"
+
 deploy_dir="${HOME}/code/Thesis/deploy"
-tarball="$(guix pack -L . -RR -S /relext-bin=bin relation-extraction.git)"
+tarball="$(guix time-machine --commit="$GUIX_COMMIT" -- pack -L . -RR -S /relext-bin=bin relation-extraction.git)"
 
 mkdir -p "$deploy_dir"
 

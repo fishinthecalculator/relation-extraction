@@ -2,8 +2,6 @@
 -e main -s
 !#
 
-(define-module (babelnet babelnet-describe-query))
-
 (use-modules (guix build utils)
              (ice-9 getopt-long)
              (ice-9 match)
@@ -112,4 +110,4 @@
              (lambda (tweet-pair)
                (let ((tid (car tweet-pair))
                      (tokens (cdr tweet-pair)))
-                 (newline))))))
+                 )))))

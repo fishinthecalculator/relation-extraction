@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import pickle
 import time
@@ -86,31 +85,20 @@ class FeatureExtractor(ABC):
         assert self.data_is_loaded, f"{self.data_path} has not been loaded! You MUST call `{type(self)}.load_data()` !"
         return self._extract(tweet_id)
 
-    async def extract_export(self, tweet_id):
-        loop = asyncio.get_running_loop()
+    def extract_export(self, tweet_id):
         if tweet_id not in self._processed:
-            def try_to_log(msg):
-                try:
-                    logger.info(msg)
-                except OSError:
-                    print("CRITICAL - Couldn't log to file!")
-
-            await loop.run_in_executor(None, try_to_log, f"Extracting {tweet_id} features from {self.data_path}...")
+            logger.debug(f"Extracting {tweet_id} features from {self.data_path}...")
             graph = self.extract(tweet_id)
             self._processed.add(tweet_id)
             if (graph is not None) and (not is_empty_graph(graph)):
-                await self.export(graph, tweet_id)
+                self.export(graph, tweet_id)
         else:
-            await loop.run_in_executor(None,
-                                       logger.warning,
-                                       f"{type(self)} - duplicate tweet {tweet_id} in input stream...")
+            logger.warning(f"{type(self)} - duplicate tweet {tweet_id} in input stream...")
 
-    async def export(self, graph, tweet_id, fmt="turtle"):
-        loop = asyncio.get_running_loop()
-        export = lambda i: graph.serialize(destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
-                                           encoding="utf-8",
-                                           format=fmt)
-        await loop.run_in_executor(None, export, tweet_id)
+    def export(self, graph, tweet_id, fmt="turtle"):
+        graph.serialize(destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
+                        encoding="utf-8",
+                        format=fmt)
 
 
 class DbpediaFE(FeatureExtractor):

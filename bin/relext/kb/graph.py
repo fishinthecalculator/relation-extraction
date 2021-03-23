@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from collections import defaultdict
 
@@ -42,17 +41,11 @@ def make_graph():
     return graph
 
 
-def read_graph(path):
-    with open(path) as fp:
-        return fp.read()
-
-
-async def load(path, graph=None, fmt="text/turtle"):
-    loop = asyncio.get_running_loop()
+def load(path, graph=None, fmt="text/turtle"):
     if graph is None:
         graph = make_graph()
-    graph_str = await loop.run_in_executor(None, read_graph, path)
-    return graph.parse(data=graph_str, format=fmt)
+    with open(path) as fp:
+        return graph.parse(data=fp.read(), format=fmt)
 
 
 def is_empty_graph(graph):

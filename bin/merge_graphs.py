@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import asyncio
+import concurrent.futures
 import os
 import pickle
 import sys
@@ -105,7 +105,7 @@ def p_dump(obj, path):
         pickle.dump(obj, fp)
 
 
-async def merge_graphs(tweet_id, b_type, idx, length):
+def merge_graphs(tweet_id, b_type, idx, length):
     def export(t_graph, t_id, t_bag):
         if not is_empty_graph(t_graph):
             p_dump(t_bag,
@@ -115,31 +115,30 @@ async def merge_graphs(tweet_id, b_type, idx, length):
                               format="ttl")
 
     tweet_graph = make_graph()
-    loop = asyncio.get_running_loop()
 
     # Merge tweet graphs.
     datasets = [UBY_NEIGHBORS,
                 DBPEDIA_NEIGHBORS]
 
-    await loop.run_in_executor(None, logger.debug, f"[{idx}/{length}] - Computing {tweet_id}'s bag...")
+    logger.debug(f"[{idx}/{length}] - Computing {tweet_id}'s bag...")
 
     for d in datasets:
         triples = Path(d, f"{tweet_id}.ttl")
         if triples.is_file():
-            tweet_graph = await load(triples, graph=tweet_graph, fmt="text/turtle")
+            tweet_graph = load(triples, graph=tweet_graph, fmt="text/turtle")
 
-    await loop.run_in_executor(None,
-                               export,
-                               tweet_graph,
-                               tweet_id,
-                               bag_functions[b_type](tweet_graph))
+    export(tweet_graph,
+           tweet_id,
+           bag_functions[b_type](tweet_graph))
 
 
-async def main(args):
-    loop = asyncio.get_running_loop()
-    lines = await loop.run_in_executor(None, process_stdin_or_file, args)
+def main(args):
+    lines = process_stdin_or_file(args)
     l = len(lines)
-    await asyncio.gather(*(merge_graphs(line.strip(), args.bag_type, i + 1, l) for i, line in enumerate(lines)))
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(merge_graphs, line.strip(), args.bag_type, i + 1, l)
+                   for i, line in enumerate(lines)]
+        return [fut.result() for fut in futures]
 
 
 if __name__ == "__main__":
@@ -169,5 +168,5 @@ if __name__ == "__main__":
 
     logger.info(f"Output will be saved at {GRAPHS}")
 
-    asyncio.run(main(args))
+    main(args)
     sys.exit(0)

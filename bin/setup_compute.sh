@@ -18,7 +18,6 @@ find "$bindir" -type f | while read -r f; do
     rm -vrf "$f"
 done
 
-tar -xvf "${remote_dir}/${tarball}"
-rm -rf "${remote_dir:?}/${tarball}"
+tar -xvf "${remote_dir}/${tarball}" > tar-messages.log 2> tar-errors.log; rm -rf "${remote_dir:?}/${tarball}"
 
 exit 0

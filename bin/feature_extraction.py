@@ -24,7 +24,8 @@ async def main(args):
 
     loop = asyncio.get_running_loop()
     lines = await loop.run_in_executor(None, process_stdin_or_file, args)
-    await asyncio.gather(*(fe.extract_export(tweet_id.strip()) for tweet_id in lines))
+    l = len(lines)
+    await asyncio.gather(*(fe.extract_export(tweet_id.strip(), i + 1, l) for i, tweet_id in enumerate(lines)))
     logger.info(f"Exported features from {args.source} to {args.out_dir}")
 
 

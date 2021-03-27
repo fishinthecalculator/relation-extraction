@@ -16,9 +16,11 @@ def main(args):
     fe.load_data()
 
     lines = process_stdin_or_file(args)
-    for tweet_id in lines:
-        fe.extract_export(tweet_id.strip())
-    logger.info(f"Exported features from {args.source} to {args.out_dir}")
+    n_lines = len(lines)
+    logger.info(f"Processing {n_lines} tweets...")
+    for i, tweet_id in enumerate(lines):
+        fe.extract_export(tweet_id.strip(), i + 1, n_lines)
+    logger.info(f"Exported features from {len(list(args.out_dir.glob('*.ttl')))} tweets.")
 
 
 if __name__ == "__main__":

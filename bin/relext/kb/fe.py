@@ -85,15 +85,15 @@ class FeatureExtractor(ABC):
         assert self.data_is_loaded, f"{self.data_path} has not been loaded! You MUST call `{type(self)}.load_data()` !"
         return self._extract(tweet_id)
 
-    def extract_export(self, tweet_id):
+    def extract_export(self, tweet_id, i, l):
         if tweet_id not in self._processed:
-            logger.debug(f"Extracting {tweet_id} features from {self.data_path}...")
+            logger.debug(f"[{i}/{l}] Extracting {tweet_id} features...")
             graph = self.extract(tweet_id)
             self._processed.add(tweet_id)
             if (graph is not None) and (not is_empty_graph(graph)):
                 self.export(graph, tweet_id)
         else:
-            logger.warning(f"{type(self)} - duplicate tweet {tweet_id} in input stream...")
+            logger.warning(f"{type(self)} - duplicate tweet {tweet_id} in input stream!")
 
     def export(self, graph, tweet_id, fmt="turtle"):
         graph.serialize(destination=str(Path(self.out_path, f"{tweet_id}.ttl")),

@@ -93,18 +93,10 @@ class FeatureExtractor(ABC):
     async def extract_export(self, tweet_id, i, l):
         loop = asyncio.get_running_loop()
         if tweet_id not in self._processed:
-            logger.debug(f"{type(self)} - [{i}/{l}] Extracting {tweet_id} features...")
-
-            def try_to_log(msg):
-                try:
-                    logger.info(msg)
-                except OSError:
-                    print("CRITICAL - Couldn't log to file!")
-
             await loop.run_in_executor(
                 None,
-                try_to_log,
-                f"Extracting {tweet_id} features from {self.data_path}...",
+                logger.debug,
+                f"{type(self)} - [{i}/{l}] Extracting {tweet_id} features...",
             )
             graph = self.extract(tweet_id)
             self._processed.add(tweet_id)

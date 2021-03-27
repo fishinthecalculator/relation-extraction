@@ -87,7 +87,7 @@ class FeatureExtractor(ABC):
 
     def extract_export(self, tweet_id, i, l):
         if tweet_id not in self._processed:
-            logger.debug(f"[{i}/{l}] Extracting {tweet_id} features...")
+            logger.debug(f"{type(self)} - [{i}/{l}] Extracting {tweet_id} features...")
             graph = self.extract(tweet_id)
             self._processed.add(tweet_id)
             if (graph is not None) and (not is_empty_graph(graph)):

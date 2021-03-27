@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import pickle
 import time
@@ -67,7 +68,9 @@ class FeatureExtractor(ABC):
 
                 logger.info(f"Loading {self.data_path}...")
                 self.g = graph.parse(location=str(self.data_path), format=self.fmt)
-                logger.info(f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m.")
+                logger.info(
+                    f"Graph loaded in {round((time.time() - start) / 60, ndigits=2)}m."
+                )
 
                 try:
                     with open(data_pickled, "wb") as fp:
@@ -82,27 +85,52 @@ class FeatureExtractor(ABC):
         pass
 
     def extract(self, tweet_id):
-        assert self.data_is_loaded, f"{self.data_path} has not been loaded! You MUST call `{type(self)}.load_data()` !"
+        assert (
+            self.data_is_loaded
+        ), f"{self.data_path} has not been loaded! You MUST call `{type(self)}.load_data()` !"
         return self._extract(tweet_id)
 
-    def extract_export(self, tweet_id, i, l):
+    async def extract_export(self, tweet_id, i, l):
+        loop = asyncio.get_running_loop()
         if tweet_id not in self._processed:
             logger.debug(f"{type(self)} - [{i}/{l}] Extracting {tweet_id} features...")
+
+            def try_to_log(msg):
+                try:
+                    logger.info(msg)
+                except OSError:
+                    print("CRITICAL - Couldn't log to file!")
+
+            await loop.run_in_executor(
+                None,
+                try_to_log,
+                f"Extracting {tweet_id} features from {self.data_path}...",
+            )
             graph = self.extract(tweet_id)
             self._processed.add(tweet_id)
             if (graph is not None) and (not is_empty_graph(graph)):
-                self.export(graph, tweet_id)
+                await self.export(graph, tweet_id)
         else:
-            logger.warning(f"{type(self)} - duplicate tweet {tweet_id} in input stream!")
+            await loop.run_in_executor(
+                None,
+                logger.warning,
+                f"{type(self)} - duplicate tweet {tweet_id} in input stream...",
+            )
 
-    def export(self, graph, tweet_id, fmt="turtle"):
-        graph.serialize(destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
-                        encoding="utf-8",
-                        format=fmt)
+    async def export(self, graph, tweet_id, fmt="turtle"):
+        loop = asyncio.get_running_loop()
+        export = lambda i: graph.serialize(
+            destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
+            encoding="utf-8",
+            format=fmt,
+        )
+        await loop.run_in_executor(None, export, tweet_id)
 
 
 class DbpediaFE(FeatureExtractor):
-    def __init__(self, data_path: Path, out_path: Path, tweets_path: Path, max_level=3, fmt="nt"):
+    def __init__(
+            self, data_path: Path, out_path: Path, tweets_path: Path, max_level=3, fmt="nt"
+    ):
         super().__init__(data_path, out_path, fmt=fmt)
         self.props = defaultdict(int)
         self.tweets_path = tweets_path
@@ -142,7 +170,15 @@ class DbpediaFE(FeatureExtractor):
 
 
 class UbyFE(FeatureExtractor):
-    def __init__(self, data_path: Path, out_path: Path, entities_path: Path, split_token=" ", max_level=3, fmt="nt"):
+    def __init__(
+            self,
+            data_path: Path,
+            out_path: Path,
+            entities_path: Path,
+            split_token=" ",
+            max_level=3,
+            fmt="nt",
+    ):
         super().__init__(data_path, out_path, split_token=split_token, fmt=fmt)
         self.entities_path = entities_path
         self.max_level = max_level
@@ -157,9 +193,11 @@ class UbyFE(FeatureExtractor):
         graph = make_graph()
         graph_path = Path(self.entities_path, f"{tweet_id}.tsv")
         if graph_path.is_file():
-            words = (splitted
-                     for token in UbyFE.get_tokens(graph_path)
-                     for splitted in token.split(self.split_token))
+            words = (
+                splitted
+                for token in UbyFE.get_tokens(graph_path)
+                for splitted in token.split(self.split_token)
+            )
 
             for word in words:
                 rep = Literal(word)

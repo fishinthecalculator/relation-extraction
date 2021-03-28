@@ -46,11 +46,11 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
 process run-fim (with state-dir)
   packages "python-wrapper" "python-numpy" "python-rdflib" python-pyfim
   inputs
-    . graphs: : file state-dir / "graphs"
+    . bags: : file state-dir / "features" / "bags"
   outputs
     . fim-out: : file state-dir / "fim"
   # bash {
-    python bin/run_fim.py -g {{inputs:graphs}} -o {{outputs:fim-out}}
+    python bin/run_fim.py -g {{inputs:bags}} -o {{outputs:fim-out}}
   }
 
 workflow frequent-itemset-mining

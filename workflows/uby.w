@@ -10,9 +10,9 @@ process uby-feature-extraction (with state-dir)
     . entities: : file state-dir / "entities"
     . ids: : file state-dir / "tweets" / "ids.tsv"
     . vn: "inputs/uby"
-  outputs uby-dir: : file state-dir / "uby-neighbors"
+  outputs uby-f: : file state-dir / "features" / "verbnet"
   # bash {
-    python bin/feature_extraction.py -s uby -t {{inputs:entities}} -i {{inputs:ids}} -f {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-dir}}
+    python bin/feature_extraction.py -s uby -t {{inputs:entities}} -i {{inputs:ids}} -f {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-f}}
   }
 
 workflow UBY

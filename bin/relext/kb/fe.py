@@ -102,6 +102,11 @@ class FeatureExtractor(ABC):
             self._processed.add(tweet_id)
             if (graph is not None) and (not is_empty_graph(graph)):
                 await self.export(graph, tweet_id)
+                await loop.run_in_executor(
+                    None,
+                    logger.debug,
+                    f"{type(self)} - [{i}/{l}] Exported {tweet_id} features!",
+                )
         else:
             logger.warning(f"{type(self)} - duplicate tweet {tweet_id} in input stream...")
 

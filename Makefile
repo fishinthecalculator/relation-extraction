@@ -2,7 +2,7 @@ HERE=$(shell pwd)
 
 ARCHIVE=${HERE}/archive
 DATASETS=${HERE}/datasets
-INPUTS=inputs
+INPUTS=${HERE}/inputs
 RESULTS=${HERE}/results
 
 # Workflow inputs
@@ -17,33 +17,29 @@ DBPEDIA_DATA=${DATASETS}/dbpedia
 
 N_LINES=500000
 
-FREE_INPUTS=-i "${UBY}"="${UBY_DATA}" -i "${TWEETSKB}"="${TWEETSKB_DATA}" -i "${DBPEDIA}"="${DBPEDIA_DATA}"
 
-all: graph
-	guix workflow run run.w ${FREE_INPUTS}
+all: fim
+
+setup:
+	bin/link_inputs.sh "${UBY_DATA}" "${TWEETSKB_DATA}" "${DBPEDIA_DATA}"
 
 graph:
 	guix workflow graph run.w | dot -Tsvg -o run.svg
 
-dbpedia: graph
-	guix workflow run workflows/dbpedia.w ${FREE_INPUTS}
+bags: graph setup
+	guix workflow run workflows/feature-extraction.w
 
-uby: graph
-	guix workflow run workflows/uby.w ${FREE_INPUTS}
+fim: bags
+	guix workflow run workflows/fim.w
 
-bags: graph
-	guix workflow run workflows/merge.w ${FREE_INPUTS}
-
-fim: graph
-	guix workflow run workflows/fim.w ${FREE_INPUTS}
-
-test: graph
+test: graph setup
 	mkdir -p "${INPUTS}"
 
 	head -n ${N_LINES} "${TWEETSKB_DATA}" > "${TWEETSKB}"
 	head -n ${N_LINES} "${DBPEDIA_DATA}" > "${DBPEDIA}"
 
-	guix workflow run run.w ${FREE_INPUTS}
+	guix workflow run workflows/feature-extraction.w
+	guix workflow run workflows/fim.w
 
 scrape:
 	tweet_text.py -i "${RESULTS}/tweets" -o "${RESULTS}/tweets"

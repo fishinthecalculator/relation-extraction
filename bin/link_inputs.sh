@@ -8,9 +8,9 @@ for arg in "$@"; do
     inputs_dir="$(dirname "$arg")/../inputs"
     input="$(realpath "${inputs_dir}/${dataset}")"
     if [ ! -e "$input" ]; then
-        ln -s "$(realpath "${arg}")" "${input}"
+        ln "$(realpath "${arg}")" "${input}"
     else
-        echo "Warning: ${input} already exists..."
+        echo "Warning: ${input} already exists, skipping..."
     fi
 done
 

@@ -1,12 +1,16 @@
-define default-state-dir
-  file
-    getcwd
-    . / "results"
+define src-dir
+  getcwd
 
-process tweetskb-feature-extraction (with state-dir)
+define default-inputs-dir
+  file src-dir / "inputs"
+
+define default-state-dir
+  file src-dir / "results"
+
+process tweetskb-feature-extraction (with inputs-dir state-dir)
   packages "python-wrapper" "python-rdflib"
   inputs
-    . tweetskb: "inputs/tweetskb"
+    . tweetskb: : file inputs-dir / "tweetskb"
     . ids: : file state-dir / "tweets" / "ids.tsv"
   outputs tweetskb-dir: : file state-dir / "tweetskb"
   # bash {
@@ -15,4 +19,4 @@ process tweetskb-feature-extraction (with state-dir)
 
 workflow tweetskb
   processes
-    tweetskb-feature-extraction default-state-dir
+    tweetskb-feature-extraction default-inputs-dir default-state-dir

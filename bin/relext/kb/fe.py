@@ -8,6 +8,7 @@ from itertools import permutations
 from pathlib import Path
 
 from rdflib import Literal, URIRef
+from rdflib.namespace import RDF
 from rdflib.util import guess_format
 
 from .graph import make_graph, sub_obj_bfs, is_empty_graph
@@ -157,7 +158,8 @@ class DbpediaFE(FeatureExtractor):
                     # Add n-hops neighbors.
                     for node in (sub, obj):
                         for t in sub_obj_bfs(self.g, node, max_level=self.max_level):
-                            graph.add(t)
+                            if t[1] == RDF.type:
+                                graph.add(t)
 
         return graph
 

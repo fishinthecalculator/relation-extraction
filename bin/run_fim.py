@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import pickle
 import sys
@@ -74,6 +75,8 @@ def map_bags(bags_path):
 
 
 def main(args):
+    with open(args.conf) as fp:
+        conf = json.load(fp)
     rules_pickle_path = Path(FIM, f"rules.npz")
     mapped_bags_pickle_path = Path(FIM, f"mapped-bags.pickle")
 
@@ -94,18 +97,18 @@ def main(args):
             # 4e-3 -> about 14G
             # 3e-3 -> no way
             # 1e-3 -> 15G and counting..
-            supp=1e-3,
-            zmin=2,
-            conf=60,  # minimum confidence of an assoc. rule
+            supp=conf['supp'],
+            zmin=conf['zmin'],
+            conf=conf['confidence'],  # minimum confidence of an assoc. rule
             # C: rule confidence as a percentage
             # a: absolute item set support (number of transactions)
             # b: absolute body set support (number of transactions)
-            report="Cab",
+            report=conf['report'],
             #  eval: measure for item set evaluation
             # q: difference of lift quotient to 1
             # r: difference of conviction quotient to 1
-            eval="r",
-            thresh=5,
+            eval=conf['eval'],
+            thresh=conf['thresh'],
         )  # for evaluation measure
         logger.info(f"Done in {round((time.time() - start) / 60, ndigits=2)}m")
         np.savez_compressed(rules_pickle_path, rules=rules)
@@ -124,6 +127,9 @@ if __name__ == "__main__":
         required=True,
         help="Path to the merged graphs representing the tweets.",
     )
+
+    parser.add_argument("-c", "--conf", type=Path, default=Path(Path.cwd(), "hyperparameters", "fim.json"),
+                        help=f"Path to the hyper-parameters json file.")
 
     args = parser.parse_args()
 

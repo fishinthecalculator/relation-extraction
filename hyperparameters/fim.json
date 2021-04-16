@@ -1,8 +1,8 @@
 {
-  "supp": 1e-3,
+  "supp": 10,
   "zmin": 2,
-  "confidence": 60,
+  "confidence": 80,
   "report": "Cab",
   "eval": "r",
-  "thresh": 5
+  "thresh": 10
 }

@@ -108,9 +108,11 @@ async def merge_graphs(tweet_id, b_type, idx, length):
     def export(t_graph, t_id, t_bag):
         if not is_empty_graph(t_graph):
             p_dump(t_bag, Path(out, f"{t_id}.pickle"))
-            t_graph.serialize(destination=str(out, f"{t_id}-bag.ttl"),
-                              encoding="utf-8",
-                              format="ttl")
+            t_graph.serialize(
+                destination=str(Path(out, f"{t_id}-bag.ttl")),
+                encoding="utf-8",
+                format="ttl",
+            )
 
     tweet_graph = make_graph()
     loop = asyncio.get_running_loop()

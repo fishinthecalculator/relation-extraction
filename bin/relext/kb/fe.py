@@ -13,7 +13,7 @@ from rdflib.util import guess_format
 
 from relext.storage import tweet_to_path
 from .graph import make_graph, sub_obj_bfs, is_empty_graph
-from .prefix import NEE, SIOC, SCHEMA, LEMON
+from .prefix import NEE, SIOC, SCHEMA, LEMON, UBY
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,11 @@ class UbyFE(FeatureExtractor):
                         graph.add((sense, LEMON.canonicalForm, canonical_form))
 
                         # Add n-hops neighbors.
-                        for t in sub_obj_bfs(self.g, sense, max_level=self.max_level):
+                        for t in sub_obj_bfs(self.g,
+                                             sense,
+                                             max_level=self.max_level,
+                                             ignore={LEMON.example,
+                                                     UBY.externalSystem}):
                             graph.add(t)
         return graph
 

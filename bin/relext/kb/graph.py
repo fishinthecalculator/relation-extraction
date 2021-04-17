@@ -9,17 +9,20 @@ from .prefix import all_prefixes
 logger = logging.getLogger(__name__)
 
 
-def sub_obj_bfs(g, node, max_level=10):
+def sub_obj_bfs(g, node, max_level=10, ignore=None):
+    if ignore is None:
+        ignore = set()
     visited = defaultdict(int)
     border = [(node, 0)]
     while len(border) > 0:
         n, l = border.pop(0)
         for t in g.triples((n, None, None)):
-            yield t
-            if not visited[t[2]]:
-                visited[t[2]] = True
-                if l <= (max_level - 1):
-                    border.append((t[2], l + 1))
+            if t[1] not in ignore:
+                yield t
+                if not visited[t[2]]:
+                    visited[t[2]] = True
+                    if l <= (max_level - 1):
+                        border.append((t[2], l + 1))
 
 
 def sub_obj_dfs(g, node, current_level=0, max_level=10, visited=None):

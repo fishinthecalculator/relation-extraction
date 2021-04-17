@@ -32,11 +32,13 @@ bags: graph setup
 fim: bags
 	guix workflow run workflows/fim.w
 
-test: graph setup
+test: graph
 	mkdir -p "${INPUTS}"
 
 	head -n ${N_LINES} "${TWEETSKB_DATA}" > "${TWEETSKB}"
 	head -n ${N_LINES} "${DBPEDIA_DATA}" > "${DBPEDIA}"
+
+	bin/link_inputs.sh "${UBY_DATA}"
 
 	guix workflow run workflows/feature-extraction.w
 	guix workflow run workflows/fim.w

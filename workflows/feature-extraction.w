@@ -24,7 +24,7 @@ process dbpedia-feature-extraction (with inputs-dir state-dir)
     . ids: : file state-dir / "tweets" / "ids.tsv"
     . db: : file inputs-dir / "dbpedia"
   outputs
-    . dbpedia-f: : file state-dir / "features" / "dbpedia"
+    . dbpedia-f: : file state-dir / "features"
   # bash {
     python bin/feature_extraction.py -s dbpedia -i {{inputs:ids}} -n 3 -t {{inputs:entities}} -d {{inputs:db}} -o {{outputs:dbpedia-f}}
 
@@ -37,7 +37,7 @@ process uby-feature-extraction (with inputs-dir state-dir)
     . vn: : file inputs-dir / "uby"
     . entities: : file state-dir / "entities"
     . ids: : file state-dir / "tweets" / "ids.tsv"
-  outputs uby-f: : file state-dir / "features" / "verbnet"
+  outputs uby-f: : file state-dir / "features"
   # bash {
     python bin/feature_extraction.py -s uby -t {{inputs:entities}} -i {{inputs:ids}} -f {{inputs:split}} -u {{inputs:vn}} -o {{outputs:uby-f}}
   }
@@ -46,18 +46,16 @@ process merge-feature-graphs (with state-dir)
   packages "coreutils" "python-wrapper" "python-rdflib"
   inputs
     . ids: : file state-dir / "tweets" / "ids.tsv"
-    . uby-f: : file state-dir / "features" / "verbnet"
-    . dbpedia-f: : file state-dir / "features" / "dbpedia"
+    . features: : file state-dir / "features"
   outputs
-    . bags: : file state-dir / "features" / "bags"
+    . bags: : file state-dir / "features"
   # bash {
-    python bin/merge_graphs.py -i {{inputs:ids}} -u {{inputs:uby-f}} -d {{inputs:dbpedia-f}} -o {{outputs:bags}}
+    python bin/merge_graphs.py -i {{inputs:ids}} -o {{outputs:bags}}
   }
 
 workflow feature-extraction
   processes
-    auto-connect
-      select-tweets-entities default-inputs-dir default-state-dir
-      dbpedia-feature-extraction default-inputs-dir default-state-dir
-      uby-feature-extraction default-inputs-dir default-state-dir
-      merge-feature-graphs default-state-dir
+    select-tweets-entities default-inputs-dir default-state-dir
+    dbpedia-feature-extraction default-inputs-dir default-state-dir
+    uby-feature-extraction default-inputs-dir default-state-dir
+    merge-feature-graphs default-state-dir

@@ -44,7 +44,7 @@ def map_bags(bags_path):
     headers_pickle_path = Path(bags_path.parent, f"headers.pickle")
     start = time.time()
     logger.info("Loading bags of items...")
-    bags = [bag for bag in map(p_load, GRAPHS.glob("*.pickle")) if len(bag) > 0]
+    bags = [bag for bag in map(p_load, GRAPHS.glob("**/*.pickle")) if len(bag) > 0]
 
     logger.info("Enumerating unique items...")
     # Make a map of unique strings to natural numbers.

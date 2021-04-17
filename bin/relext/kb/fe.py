@@ -11,6 +11,7 @@ from rdflib import Literal, URIRef
 from rdflib.namespace import RDF
 from rdflib.util import guess_format
 
+from relext.storage import tweet_to_path
 from .graph import make_graph, sub_obj_bfs, is_empty_graph
 from .prefix import NEE, SIOC, SCHEMA, LEMON
 
@@ -34,12 +35,13 @@ def cut(strings, field: int, sep="\t"):
 
 
 class FeatureExtractor(ABC):
-    def __init__(self, data_path: Path, out_path: Path, split_token=" ", fmt=""):
+    def __init__(self, data_path: Path, out_path: Path, name: str, split_token=" ", fmt=""):
         self.data_path = data_path
         self.out_path = out_path
         self.data_is_loaded = False
         self._processed = set()
         self.g = make_graph()
+        self.name = name
 
         if not fmt:
             self.fmt = guess_format(str(self.data_path))
@@ -114,7 +116,8 @@ class FeatureExtractor(ABC):
     async def export(self, graph, tweet_id, fmt="turtle"):
         loop = asyncio.get_running_loop()
         export = lambda i: graph.serialize(
-            destination=str(Path(self.out_path, f"{tweet_id}.ttl")),
+            destination=str(Path(tweet_to_path(tweet_id, root=self.out_path, make_it=True),
+                                 f"{tweet_id}-{self.name}.ttl")),
             encoding="utf-8",
             format=fmt,
         )
@@ -125,7 +128,7 @@ class DbpediaFE(FeatureExtractor):
     def __init__(
             self, data_path: Path, out_path: Path, tweets_path: Path, max_level=3, fmt="nt"
     ):
-        super().__init__(data_path, out_path, fmt=fmt)
+        super().__init__(data_path, out_path, 'dbpedia', fmt=fmt)
         self.props = defaultdict(int)
         self.tweets_path = tweets_path
         self.max_level = max_level
@@ -174,7 +177,7 @@ class UbyFE(FeatureExtractor):
             max_level=3,
             fmt="nt",
     ):
-        super().__init__(data_path, out_path, split_token=split_token, fmt=fmt)
+        super().__init__(data_path, out_path, name='verbnet', split_token=split_token, fmt=fmt)
         self.entities_path = entities_path
         self.max_level = max_level
 
@@ -213,7 +216,7 @@ class UbyFE(FeatureExtractor):
 
 class TweetsKbFE(FeatureExtractor):
     def __init__(self, data_path: Path, out_path: Path, fmt="n3"):
-        super().__init__(data_path, out_path, fmt=fmt)
+        super().__init__(data_path, out_path, 'tweetskb', fmt=fmt)
 
     def _extract(self, tweet_id):
         tweet_graph = make_graph()

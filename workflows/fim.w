@@ -46,7 +46,7 @@ to @code{apriori}, @code{eclat} and @code{fpgrowth}, which can also be used to g
 process run-fim (with state-dir)
   packages "python-wrapper" "python-numpy" "python-rdflib" python-pyfim
   inputs
-    . bags: : file state-dir / "features" / "bags"
+    . bags: : file state-dir / "features"
   outputs
     . fim-out: : file state-dir / "fim"
   # bash {
@@ -66,14 +66,13 @@ process print-rules (with state-dir)
 process run-show-graph (with state-dir)
   packages "raptor2" "graphviz" "sed" "parallel" "coreutils" "findutils"
   inputs
-    . bags: : file state-dir / "features" / "bags"
+    . bags: : file state-dir / "features"
   # bash {
-    find {{inputs:bags}} -type f -name "*.ttl" | parallel "bin/show_graph.sh {} turtle"
+    find {{inputs:bags}} -type f -name "*-bag.ttl" | parallel "bin/show_graph.sh {} turtle"
   }
 
 workflow frequent-itemset-mining
   processes
-    auto-connect
-      run-fim default-state-dir
-      print-rules default-state-dir
-      run-show-graph default-state-dir
+    run-fim default-state-dir
+    print-rules default-state-dir
+    run-show-graph default-state-dir

@@ -1,5 +1,5 @@
 from rdflib import Namespace
-from rdflib.namespace import RDF, RDFS, XSD, DC
+from rdflib.namespace import RDF, RDFS, XSD, DC, OWL
 
 DCTERMS = Namespace("http://purl.org/dc/terms/")
 NEE = Namespace("http://www.ics.forth.gr/isl/oae/core#")
@@ -12,6 +12,8 @@ LEMON = Namespace("http://www.monnet-project.eu/lemon#")
 LEMON_UBY = Namespace("http://lemon-model.net/lexica/uby/")
 DBO = Namespace("http://dbpedia.org/ontology/")
 DBR = Namespace("http://dbpedia.org/resource/")
+UBY = Namespace("http://purl.org/olia/ubyCat.owl#")
+
 
 all_prefixes = [("rdf", RDF),
                 ("rdfs", RDFS),
@@ -27,4 +29,6 @@ all_prefixes = [("rdf", RDF),
                 ("wna", WNA),
                 ("sioc_t", SIOC_T),
                 ("onyx", ONYX),
-                ("sioc", SIOC)]
+                ("sioc", SIOC),
+                ("uby", UBY),
+                ("owl", OWL)]
